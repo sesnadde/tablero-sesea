@@ -1,7 +1,10 @@
 import os
+import re
+import json
+import base64
+
 import pandas as pd
 import streamlit as st
-import json
 import plotly.express as px
 import plotly.graph_objects as go
 
@@ -14,17 +17,971 @@ from supabase import create_client
 # --------------------------------------------------
 
 st.set_page_config(
-    page_title="Dashboard SESEA",
+    page_title="Informe Trimestral SESEA",
     page_icon="📊",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
-
-st.title("Informe Trimestral SESEA")
-st.caption("Sistema Nacional Anticorrupción")
 
 
 # --------------------------------------------------
-# 2. CARGAR CREDENCIALES
+# 2. IDENTIDAD INSTITUCIONAL
+# --------------------------------------------------
+
+# Paleta institucional
+VINO = "#9b2247"
+VINO_OSCURO = "#611232"
+ORO = "#a57f2c"
+ORO_CLARO = "#e6d194"
+GRIS = "#98989A"
+TINTA = "#161a1d"
+
+# Paleta complementaria para tarjetas
+COLORES_TARJETAS = [
+    "#4F7187",
+    "#397D86",
+    "#6F8F82",
+    "#7D8790",
+    "#82758F"
+]
+
+# Escala del mapa (claro = bajo, oscuro = alto)
+ESCALA_MAPA = [
+    [0.00, "#f7f0e2"],
+    [0.35, ORO_CLARO],
+    [0.70, VINO],
+    [1.00, VINO_OSCURO]
+]
+
+GRADIENTE_LEYENDA = (
+    f"linear-gradient(90deg, #f7f0e2 0%, {ORO_CLARO} 35%, "
+    f"{VINO} 70%, {VINO_OSCURO} 100%)"
+)
+
+
+def aclarar(color, proporcion):
+    """Mezcla un color con blanco y devuelve el hexadecimal."""
+
+    color = color.lstrip("#")
+
+    canales = [
+        int(color[posicion:posicion + 2], 16)
+        for posicion in (0, 2, 4)
+    ]
+
+    canales = [
+        round(canal * proporcion + 255 * (1 - proporcion))
+        for canal in canales
+    ]
+
+    return "#{:02x}{:02x}{:02x}".format(*canales)
+
+# Etiqueta de la vista agregada
+NACIONAL = "Nacional"
+
+
+# --------------------------------------------------
+# 3. ICONOS
+# --------------------------------------------------
+
+CARPETA_ICONOS = "assets/icons"
+
+ARCHIVOS_ICONOS = {
+    "persona": "person_100dp_FFFFFF_FILL0_wght400_GRAD0_opsz48.svg",
+    "grupo": "groups_100dp_FFFFFF_FILL0_wght400_GRAD0_opsz48.svg",
+    "check": "check_100dp_A31746_FILL0_wght400_GRAD0_opsz48.svg",
+    "lista": "list_alt_check_100dp_A31746_FILL0_wght400_GRAD0_opsz48.svg",
+    "grading": "grading_100dp_A31746_FILL0_wght400_GRAD0_opsz48.svg",
+    "play": "play_arrow_100dp_A31746_FILL0_wght400_GRAD0_opsz48.svg",
+    "grafica": "graph_2_100dp_A31746_FILL0_wght400_GRAD0_opsz48.svg",
+    "red": "network_node_100dp_A31746_FILL0_wght400_GRAD0_opsz48.svg",
+    "finanzas": "finance_100dp_A31746_FILL0_wght400_GRAD0_opsz48.svg"
+}
+
+
+@st.cache_data(show_spinner=False)
+def icono(nombre, color="#ffffff", tamano=24):
+    """Devuelve el icono como imagen lista para insertarse en HTML.
+
+    Se entrega como data URI porque Streamlit no conserva el
+    SVG en línea dentro del HTML de los componentes.
+    """
+
+    ruta = os.path.join(
+        CARPETA_ICONOS,
+        ARCHIVOS_ICONOS[nombre]
+    )
+
+    if not os.path.exists(ruta):
+        return ""
+
+    with open(ruta, "r", encoding="utf-8") as archivo:
+        svg = archivo.read()
+
+    # El color se define al momento de usar el icono
+    svg = re.sub(
+        r'fill="#[0-9A-Fa-f]{3,8}"',
+        f'fill="{color}"',
+        svg
+    )
+
+    codificado = base64.b64encode(
+        svg.encode("utf-8")
+    ).decode("ascii")
+
+    return (
+        f'<img src="data:image/svg+xml;base64,{codificado}" '
+        f'width="{tamano}" height="{tamano}" alt="">'
+    )
+
+
+# --------------------------------------------------
+# 4. ESTILOS GENERALES
+# --------------------------------------------------
+
+st.html(
+    f"""
+    <style>
+
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&display=swap');
+
+    html, body, [class*="st-"] {{
+        font-family: 'Noto Sans', 'Segoe UI', system-ui, sans-serif;
+    }}
+
+    /* El tablero se dimensiona con la altura de la ventana
+       para que quepa completo en una sola pantalla. */
+    :root {{
+        --alto-mapa: 60vh;
+        --alto-grafica: 26vh;
+    }}
+
+    @media (max-height: 900px) {{
+        :root {{
+            --alto-mapa: 51vh;
+            --alto-grafica: 22vh;
+        }}
+    }}
+
+    /* Altura media: se omiten las descripciones */
+    @media (max-height: 860px) {{
+        :root {{
+            --alto-mapa: 49vh;
+            --alto-grafica: 20vh;
+        }}
+
+        .nota-seccion,
+        .pdn-descripcion {{
+            display: none;
+        }}
+
+        .titulo-seccion {{
+            font-size: 12px;
+            margin-bottom: 4px;
+        }}
+
+        .st-key-tarjeta_mapa,
+        .st-key-tarjeta_profesionalizacion,
+        .st-key-tarjeta_designaciones,
+        .st-key-tarjeta_avances,
+        .st-key-tarjeta_pdn {{
+            padding: 8px 14px 7px 14px;
+        }}
+    }}
+
+    /* Pantallas de poca altura: todo se compacta */
+    @media (max-height: 780px) {{
+        :root {{
+            --alto-mapa: 46vh;
+            --alto-grafica: 15vh;
+            --escala: 0.96;
+        }}
+
+        .block-container {{
+            padding: 0.35rem 0.9rem 0.2rem 0.9rem;
+        }}
+
+        .stMainBlockContainer div[data-testid="stVerticalBlock"] {{
+            gap: 0.4rem;
+        }}
+
+        .st-key-barra_superior {{
+            padding: 5px 18px 0 18px;
+        }}
+
+        .st-key-tarjeta_mapa,
+        .st-key-tarjeta_profesionalizacion,
+        .st-key-tarjeta_designaciones,
+        .st-key-tarjeta_avances,
+        .st-key-tarjeta_pdn {{
+            padding: 7px 12px 6px 12px;
+        }}
+
+        .des-tarjeta {{
+            min-height: 86px;
+            padding: 6px 6px 6px 8px;
+        }}
+
+        .des-icono {{
+            width: 22px;
+            height: 22px;
+            border-radius: 6px;
+        }}
+
+        .des-titulo {{
+            min-height: 28px;
+        }}
+
+        .des-valor {{
+            font-size: 21px;
+        }}
+
+        .avance-circulo {{
+            width: 36px;
+            height: 36px;
+        }}
+
+        .avances-linea,
+        .avances-progreso {{
+            top: 18px;
+        }}
+
+        .avance-nombre {{
+            min-height: 28px;
+        }}
+
+        .pdn-anillo {{
+            width: 44px;
+            height: 44px;
+        }}
+
+        .pdn-anillo-centro {{
+            width: 34px;
+            height: 34px;
+            font-size: 12px;
+        }}
+
+        .cons-valor {{
+            font-size: 32px;
+        }}
+
+        .prof-numero {{
+            font-size: 25px;
+        }}
+
+        .des-titulo,
+        .avance-nombre {{
+            font-size: 9px;
+        }}
+
+        .des-resumen {{
+            margin-top: 4px;
+            padding-top: 4px;
+        }}
+
+        .resumen-mapa {{
+            margin-top: 4px;
+            padding-top: 4px;
+        }}
+    }}
+
+    /* Pantallas muy bajas: mínima expresión */
+    @media (max-height: 690px) {{
+        :root {{
+            --alto-mapa: 42vh;
+            --alto-grafica: 13vh;
+        }}
+
+        .des-tarjeta {{
+            min-height: 76px;
+        }}
+
+        .des-valor {{
+            font-size: 18px;
+        }}
+
+        .des-titulo,
+        .avance-nombre {{
+            font-size: 8.5px;
+        }}
+
+        .avance-circulo {{
+            width: 30px;
+            height: 30px;
+        }}
+
+        .avances-linea,
+        .avances-progreso {{
+            top: 15px;
+        }}
+
+        .pdn-anillo {{
+            width: 38px;
+            height: 38px;
+        }}
+
+        .pdn-anillo-centro {{
+            width: 29px;
+            height: 29px;
+            font-size: 10px;
+        }}
+
+        .cons-valor {{
+            font-size: 27px;
+        }}
+
+        .prof-numero {{
+            font-size: 21px;
+        }}
+
+        .resumen-mapa,
+        .cons-fila,
+        .des-meta {{
+            font-size: 9.5px;
+        }}
+    }}
+
+    @media (max-height: 655px) {{
+        :root {{
+            --alto-mapa: 37vh;
+            --alto-grafica: 11vh;
+            --escala: 0.92;
+        }}
+
+        .des-tarjeta {{
+            min-height: 68px;
+        }}
+
+        .avance-nombre,
+        .des-titulo {{
+            min-height: 24px;
+        }}
+    }}
+
+    @media (max-height: 600px) {{
+        :root {{
+            --escala: 0.84;
+        }}
+    }}
+
+    @media (max-height: 540px) {{
+        :root {{
+            --escala: 0.74;
+        }}
+    }}
+
+    /* Escalado proporcional de respaldo en ventanas muy bajas.
+       El ancho se compensa para seguir ocupando toda la pantalla. */
+    .stMainBlockContainer {{
+        zoom: var(--escala, 1);
+        width: calc(100% / var(--escala, 1));
+    }}
+
+    /* Lienzo general */
+    .stApp {{
+        background-color: #f2efec;
+    }}
+
+    header[data-testid="stHeader"] {{
+        background: transparent;
+        height: 0;
+    }}
+
+    /* Barra de herramientas y pie de Streamlit */
+    [data-testid="stToolbar"],
+    [data-testid="stDecoration"],
+    footer {{
+        display: none;
+    }}
+
+    .block-container {{
+        padding: 0.5rem 1.1rem 0.4rem 1.1rem;
+        max-width: 100%;
+    }}
+
+    /* Separación vertical entre bloques */
+    .stMainBlockContainer div[data-testid="stVerticalBlock"] {{
+        gap: 0.55rem;
+    }}
+
+    /* ------------------------------------------
+       BARRA SUPERIOR
+    ------------------------------------------ */
+
+    .st-key-barra_superior {{
+        background: linear-gradient(90deg, {VINO_OSCURO} 0%, {VINO} 55%);
+        border-radius: 12px;
+        padding: 8px 22px 2px 22px;
+        box-shadow: 0 2px 10px rgba(22, 26, 29, 0.14);
+    }}
+
+    .st-key-barra_superior label p {{
+        color: #ffffff !important;
+        font-size: 12px !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }}
+
+    .st-key-barra_superior div[data-baseweb="select"] > div {{
+        background-color: #ffffff;
+        border: none;
+        border-radius: 7px;
+        min-height: 32px;
+        font-size: 13px;
+        font-weight: 600;
+        color: {TINTA};
+    }}
+
+    .st-key-barra_superior div[data-testid="stSelectbox"] {{
+        margin-bottom: 4px;
+    }}
+
+    .titulo-barra {{
+        color: #ffffff;
+        font-size: 21px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        line-height: 1.15;
+        margin-top: 4px;
+    }}
+
+    .subtitulo-barra {{
+        color: rgba(255, 255, 255, 0.78);
+        font-size: 11.5px;
+        letter-spacing: 0.02em;
+        margin-top: 2px;
+    }}
+
+    /* ------------------------------------------
+       TARJETAS CONTENEDORAS
+    ------------------------------------------ */
+
+    .st-key-tarjeta_mapa,
+    .st-key-tarjeta_profesionalizacion,
+    .st-key-tarjeta_designaciones,
+    .st-key-tarjeta_avances,
+    .st-key-tarjeta_pdn {{
+        background-color: #ffffff;
+        border-radius: 12px;
+        padding: 10px 16px 8px 16px;
+        box-shadow: 0 1px 6px rgba(22, 26, 29, 0.08);
+    }}
+
+    /* La PDN comparte fila con Profesionalización:
+       ambas tarjetas se ven de la misma altura. */
+    .st-key-tarjeta_pdn {{
+        height: 100%;
+    }}
+
+    .titulo-seccion {{
+        color: {VINO};
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        margin: 0;
+    }}
+
+    .nota-seccion {{
+        color: {GRIS};
+        font-size: 10.5px;
+        margin: 1px 0 6px 0;
+    }}
+
+    /* ------------------------------------------
+       BLOQUE DE GRADO DE CONSOLIDACION
+    ------------------------------------------ */
+
+    .cons-encabezado {{
+        display: flex;
+        align-items: flex-end;
+        gap: 18px;
+        flex-wrap: wrap;
+        margin: 0 0 4px 0;
+    }}
+
+    .cons-entidad {{
+        font-size: 13px;
+        font-weight: 700;
+        color: {TINTA};
+        line-height: 1.2;
+    }}
+
+    .cons-valor {{
+        font-size: 38px;
+        font-weight: 700;
+        color: {VINO};
+        line-height: 1;
+    }}
+
+    .cons-valor span {{
+        font-size: 13px;
+        font-weight: 600;
+        color: {GRIS};
+    }}
+
+    .cons-componentes {{
+        flex: 1;
+        min-width: 220px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }}
+
+    .cons-fila {{
+        display: grid;
+        grid-template-columns: 116px 1fr 70px;
+        align-items: center;
+        gap: 8px;
+        font-size: 10.5px;
+        line-height: 1.25;
+        color: {TINTA};
+    }}
+
+    .cons-pista {{
+        background-color: #ece7e9;
+        border-radius: 6px;
+        height: 7px;
+        overflow: hidden;
+    }}
+
+    .cons-relleno {{
+        display: block;
+        height: 100%;
+        border-radius: 6px;
+        background: linear-gradient(90deg, {ORO} 0%, {VINO} 100%);
+    }}
+
+    .cons-porcentaje {{
+        text-align: right;
+        font-weight: 700;
+        color: {VINO_OSCURO};
+        white-space: nowrap;
+    }}
+
+    .cons-porcentaje span {{
+        font-weight: 400;
+        color: {GRIS};
+    }}
+
+    .leyenda-mapa {{
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        margin-top: 0;
+        font-size: 10px;
+        color: {GRIS};
+    }}
+
+    .leyenda-barra {{
+        flex: 0 0 165px;
+        height: 8px;
+        border-radius: 5px;
+        background: {GRADIENTE_LEYENDA};
+    }}
+
+    .leyenda-sin-dato {{
+        display: inline-block;
+        width: 11px;
+        height: 11px;
+        border-radius: 3px;
+        background-color: #d9d9d9;
+        margin-right: 4px;
+        vertical-align: -1px;
+    }}
+
+    .resumen-mapa {{
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px 16px;
+        margin-top: 6px;
+        padding-top: 6px;
+        border-top: 1px solid #ece7e9;
+        font-size: 10.5px;
+        line-height: 1.3;
+        color: {TINTA};
+    }}
+
+    .resumen-etiqueta {{
+        display: block;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: {GRIS};
+        margin-bottom: 2px;
+    }}
+
+    .resumen-mapa b {{
+        color: {VINO_OSCURO};
+    }}
+
+    /* ------------------------------------------
+       DESIGNACIONES
+    ------------------------------------------ */
+
+    .grid-designaciones {{
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 8px;
+    }}
+
+    .des-tarjeta {{
+        border-radius: 10px;
+        padding: 8px 8px 8px 10px;
+        background: linear-gradient(
+            180deg,
+            var(--tinte) 0%,
+            #ffffff 78%
+        );
+        border: 1px solid var(--borde);
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        min-height: 112px;
+    }}
+
+    .des-icono {{
+        width: 26px;
+        height: 26px;
+        border-radius: 7px;
+        background-color: var(--color);
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }}
+
+    .des-titulo {{
+        font-size: 9.5px;
+        font-weight: 600;
+        line-height: 1.2;
+        color: {TINTA};
+        min-height: 34px;
+    }}
+
+    .des-valor {{
+        font-size: 25px;
+        font-weight: 700;
+        color: {TINTA};
+        line-height: 1;
+    }}
+
+    .des-meta {{
+        font-size: 9.5px;
+        color: {GRIS};
+        margin-top: -1px;
+    }}
+
+    .des-resumen {{
+        margin-top: 6px;
+        padding-top: 5px;
+        border-top: 1px solid #ece7e9;
+        display: flex;
+        align-items: baseline;
+        gap: 7px;
+        font-size: 10.5px;
+        color: {GRIS};
+    }}
+
+    .des-resumen b {{
+        font-size: 15px;
+        color: {VINO};
+    }}
+
+    /* ------------------------------------------
+       LINEA DE AVANCES
+    ------------------------------------------ */
+
+    .avances-fila {{
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        position: relative;
+        margin-top: 2px;
+    }}
+
+    .avances-linea {{
+        position: absolute;
+        top: 22px;
+        left: 10%;
+        width: 80%;
+        height: 3px;
+        background-color: #e4dfe1;
+        z-index: 1;
+    }}
+
+    .avances-progreso {{
+        position: absolute;
+        top: 22px;
+        left: 10%;
+        height: 3px;
+        background-color: {VINO};
+        z-index: 2;
+    }}
+
+    .avance-etapa {{
+        position: relative;
+        z-index: 3;
+        text-align: center;
+        padding: 0 4px;
+    }}
+
+    .avance-circulo {{
+        width: 44px;
+        height: 44px;
+        margin: 0 auto 5px auto;
+        border-radius: 50%;
+        border: 2.5px solid {VINO};
+        background-color: #ffffff;
+        color: {VINO};
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }}
+
+    .avance-etapa.inactiva .avance-circulo {{
+        border-color: #d8d3d5;
+        color: #c3bdbf;
+        background-color: #fafafa;
+    }}
+
+    .avance-nombre {{
+        font-size: 9.5px;
+        font-weight: 600;
+        line-height: 1.2;
+        color: {TINTA};
+        min-height: 34px;
+    }}
+
+    .avance-valor {{
+        display: inline-block;
+        font-size: 9.5px;
+        font-weight: 700;
+        color: {VINO_OSCURO};
+        background-color: #f8f1f3;
+        border-radius: 5px;
+        padding: 1px 6px;
+        margin-top: 1px;
+    }}
+
+    .avance-etapa.inactiva .avance-nombre {{
+        color: {GRIS};
+    }}
+
+    .avance-etapa.inactiva .avance-valor {{
+        color: {GRIS};
+        background-color: #f4f2f3;
+    }}
+
+    /* ------------------------------------------
+       PDN
+    ------------------------------------------ */
+
+    .pdn-contenido {{
+        display: grid;
+        grid-template-columns: 1fr auto 140px;
+        align-items: center;
+        gap: 10px;
+    }}
+
+    .grid-pdn {{
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+    }}
+
+    .pdn-sistema {{
+        text-align: center;
+    }}
+
+    .pdn-anillo {{
+        width: 52px;
+        height: 52px;
+        margin: 0 auto 4px auto;
+        border-radius: 50%;
+        background:
+            conic-gradient(
+                {VINO} calc(var(--pct) * 1%),
+                #ece7e9 0
+            );
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }}
+
+    .pdn-anillo-centro {{
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: 700;
+        color: {VINO_OSCURO};
+    }}
+
+    .pdn-valor {{
+        font-size: 11.5px;
+        font-weight: 700;
+        color: {TINTA};
+    }}
+
+    .pdn-valor span {{
+        font-size: 9.5px;
+        font-weight: 400;
+        color: {GRIS};
+    }}
+
+    .pdn-porcentaje {{
+        font-size: 10px;
+        font-weight: 600;
+        color: {VINO};
+    }}
+
+    .pdn-descripcion {{
+        font-size: 9.5px;
+        line-height: 1.25;
+        color: {GRIS};
+        margin-top: 5px;
+        padding: 0 4px;
+    }}
+
+    .pdn-separador {{
+        width: 1px;
+        height: 80px;
+        background-color: #ece7e9;
+    }}
+
+    .pdn-total {{
+        text-align: center;
+        color: {VINO};
+    }}
+
+    .pdn-total-titulo {{
+        font-size: 10px;
+        font-weight: 600;
+        color: {TINTA};
+        line-height: 1.25;
+        margin: 2px 0 1px 0;
+    }}
+
+    .pdn-total-valor {{
+        font-size: 22px;
+        font-weight: 700;
+        color: {TINTA};
+        line-height: 1.1;
+    }}
+
+    .pdn-total-valor span {{
+        font-size: 11px;
+        color: {GRIS};
+    }}
+
+    /* ------------------------------------------
+       PROFESIONALIZACION
+    ------------------------------------------ */
+
+    .prof-encabezado {{
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 2px 0 2px 0;
+    }}
+
+    .prof-icono {{
+        flex: 0 0 auto;
+        line-height: 0;
+    }}
+
+    .prof-numero {{
+        font-size: 30px;
+        font-weight: 700;
+        color: {VINO};
+        line-height: 1;
+    }}
+
+    .prof-texto {{
+        font-size: 10px;
+        color: {TINTA};
+        line-height: 1.3;
+    }}
+
+    /* El mapa y la gráfica se ajustan al alto de la ventana.
+       Streamlit fija el alto del contenedor de cada gráfica,
+       por eso se sobrescribe en toda la cadena. */
+    .st-key-tarjeta_mapa
+        [data-testid="stElementContainer"]:has([data-testid="stPlotlyChart"]),
+    .st-key-tarjeta_mapa [data-testid="stFullScreenFrame"],
+    .st-key-tarjeta_mapa [data-testid="stPlotlyChart"] {{
+        height: var(--alto-mapa) !important;
+        min-height: 0 !important;
+        flex: 0 0 auto !important;
+    }}
+
+    .st-key-tarjeta_profesionalizacion
+        [data-testid="stElementContainer"]:has([data-testid="stPlotlyChart"]),
+    .st-key-tarjeta_profesionalizacion [data-testid="stFullScreenFrame"],
+    .st-key-tarjeta_profesionalizacion [data-testid="stPlotlyChart"] {{
+        height: var(--alto-grafica) !important;
+        min-height: 0 !important;
+        flex: 0 0 auto !important;
+    }}
+
+    .st-key-tarjeta_mapa [data-testid="stPlotlyChart"] > div,
+    .st-key-tarjeta_mapa .js-plotly-plot,
+    .st-key-tarjeta_mapa .plot-container,
+    .st-key-tarjeta_mapa .svg-container,
+    .st-key-tarjeta_profesionalizacion [data-testid="stPlotlyChart"] > div,
+    .st-key-tarjeta_profesionalizacion .js-plotly-plot,
+    .st-key-tarjeta_profesionalizacion .plot-container,
+    .st-key-tarjeta_profesionalizacion .svg-container {{
+        height: 100% !important;
+    }}
+
+    .sin-dato {{
+        font-size: 12.5px;
+        color: {GRIS};
+        padding: 14px 0;
+    }}
+
+    .aviso-sin-informacion {{
+        background-color: #fdf6e9;
+        border-left: 3px solid {ORO};
+        border-radius: 6px;
+        padding: 5px 10px;
+        margin: 2px 0 6px 0;
+        font-size: 10.5px;
+        line-height: 1.3;
+        color: {TINTA};
+    }}
+
+    /* Botón de regreso a la vista nacional */
+    .st-key-boton_nacional button {{
+        background-color: #ffffff;
+        border: 1px solid {VINO};
+        color: {VINO};
+        border-radius: 8px;
+        padding: 2px 10px;
+        font-size: 12px;
+        font-weight: 600;
+    }}
+
+    .st-key-boton_nacional button:hover {{
+        background-color: {VINO};
+        color: #ffffff;
+    }}
+
+    </style>
+    """
+)
+
+
+# --------------------------------------------------
+# 5. CREDENCIALES Y DATOS
 # --------------------------------------------------
 
 load_dotenv()
@@ -37,21 +994,13 @@ if not supabase_url or not supabase_key:
     st.stop()
 
 
-# --------------------------------------------------
-# 3. CONECTAR CON SUPABASE
-# --------------------------------------------------
-
 supabase = create_client(
     supabase_url,
     supabase_key
 )
 
 
-# --------------------------------------------------
-# 4. CARGAR DATOS
-# --------------------------------------------------
-
-@st.cache_data
+@st.cache_data(show_spinner="Cargando información...")
 def cargar_datos():
 
     respuesta = (
@@ -64,2034 +1013,1204 @@ def cargar_datos():
     return pd.DataFrame(respuesta.data)
 
 
+@st.cache_data(show_spinner=False)
+def cargar_geojson():
+
+    with open(
+        "assets/estados_mexico.json",
+        "r",
+        encoding="utf-8"
+    ) as archivo:
+        return json.load(archivo)
+
+
 datos = cargar_datos()
+geojson_mexico = cargar_geojson()
 
 
 # --------------------------------------------------
-# 5. FILTROS DE PERIODO
+# 6. UTILIDADES DE FORMATO
 # --------------------------------------------------
 
-col1, col2 = st.columns(2)
+def formato(valor, decimales=0, sufijo=""):
+    """Formatea un número o devuelve s/d cuando no hay dato."""
 
-with col1:
-    anio = st.selectbox(
-        "Año",
-        sorted(datos["anio"].unique(), reverse=True)
+    if valor is None or pd.isna(valor):
+        return "s/d"
+
+    return f"{valor:,.{decimales}f}{sufijo}"
+
+
+def texto_trimestre(numero):
+
+    return f"{int(numero)}° Trimestre"
+
+
+# --------------------------------------------------
+# 7. BARRA SUPERIOR CON FILTROS
+# --------------------------------------------------
+
+with st.container(key="barra_superior"):
+
+    col_titulo, col_anio, col_trimestre, col_entidad = st.columns(
+        [3.4, 1, 1.2, 1.6],
+        vertical_alignment="center"
     )
 
-with col2:
-    trimestres_disponibles = sorted(
-        datos.loc[
-            datos["anio"] == anio,
-            "trimestre"
-        ].unique()
-    )
-
-    trimestre = st.selectbox(
-        "Trimestre",
-        trimestres_disponibles
-    )
-
-
-# --------------------------------------------------
-# 6. FILTRAR PERIODO
-# --------------------------------------------------
-
-datos_periodo = datos[
-    (datos["anio"] == anio) &
-    (datos["trimestre"] == trimestre)
-].copy()
-
-
-# --------------------------------------------------
-# 7. SELECTOR DE ENTIDAD
-# --------------------------------------------------
-
-entidades = ["México"] + sorted(
-    datos_periodo["nom_ent"].tolist()
-)
-
-# Inicializar entidad activa
-if "entidad_activa" not in st.session_state:
-    st.session_state["entidad_activa"] = "México"
-
-# Sincronizar selector antes de crear el widget
-if (
-    "selector_entidad" not in st.session_state
-    or st.session_state["selector_entidad"]
-    != st.session_state["entidad_activa"]
-):
-    st.session_state["selector_entidad"] = (
-        st.session_state["entidad_activa"]
-    )
-
-
-def actualizar_desde_selector():
-
-    st.session_state["entidad_activa"] = (
-        st.session_state["selector_entidad"]
-    )
-
-
-st.selectbox(
-    "Entidad",
-    entidades,
-    key="selector_entidad",
-    on_change=actualizar_desde_selector
-)
-
-entidad_seleccionada = st.session_state["entidad_activa"]
-
-# VISUAL MAPA DE MEXICO #
-
-with open(
-    "assets/estados_mexico.json",
-    "r",
-    encoding="utf-8"
-) as archivo:
-    geojson_mexico = json.load(archivo)
-
-# --------------------------------------------------
-# PREPARAR DATOS DEL MAPA
-# --------------------------------------------------
-
-mapa_datos = datos_periodo[
-    [
-        "nom_ent",
-        "grado_cons_total",
-        "tiene_informacion"
-    ]
-].copy()
-
-
-# Ajuste de nombres entre Supabase y GeoJSON
-equivalencias_mapa = {
-    "Estado de México": "México"
-}
-
-mapa_datos["nombre_mapa"] = (
-    mapa_datos["nom_ent"]
-    .replace(equivalencias_mapa)
-)
-
-
-# --------------------------------------------------
-# TEXTO PARA TOOLTIP
-# --------------------------------------------------
-
-mapa_datos["estado_informacion"] = mapa_datos.apply(
-    lambda fila:
-        "Sin información disponible"
-        if fila["tiene_informacion"] == 0
-        else f'{fila["grado_cons_total"]:.1f} / 100',
-    axis=1
-)
-
-# SEPARA ENTIDADES CON Y SIN INFORMACION #
-
-mapa_con_info = mapa_datos[
-    mapa_datos["tiene_informacion"] == 1
-].copy()
-
-mapa_sin_info = mapa_datos[
-    mapa_datos["tiene_informacion"] == 0
-].copy()
-
-# --------------------------------------------------
-# MAPA DE GRADO DE CONSOLIDACION
-# --------------------------------------------------
-
-fig_mapa = px.choropleth(
-    mapa_con_info,
-    geojson=geojson_mexico,
-    locations="nombre_mapa",
-    featureidkey="properties.name",
-    color="grado_cons_total",
-    hover_name="nom_ent",
-
-    hover_data={
-        "nombre_mapa": False,
-        "grado_cons_total": False,
-        "tiene_informacion": False,
-        "estado_informacion": True
-    },
-
-    range_color=(0, 100),
-
-    labels={
-        "estado_informacion": "Grado de consolidación",
-        "grado_cons_total": "Grado de consolidación"
-    },
-
-    color_continuous_scale="Blues",
-    projection="mercator"
-)
-
-fig_sin_info = px.choropleth(
-    mapa_sin_info,
-    geojson=geojson_mexico,
-    locations="nombre_mapa",
-    featureidkey="properties.name",
-    hover_name="nom_ent",
-
-    hover_data={
-        "nombre_mapa": False,
-        "grado_cons_total": False,
-        "tiene_informacion": False,
-        "estado_informacion": True
-    },
-    color_discrete_sequence=["#D9D9D9"],
-    projection="mercator"
-)
-
-for trace in fig_sin_info.data:
-    fig_mapa.add_trace(trace)
-
-# --------------------------------------------------
-# RESALTAR ENTIDAD SELECCIONADA
-# --------------------------------------------------
-
-if st.session_state["entidad_activa"] != "México":
-
-    entidad_activa = st.session_state["entidad_activa"]
-
-    # Ajustar nombre al usado por el GeoJSON
-    nombre_mapa_activo = equivalencias_mapa.get(
-        entidad_activa,
-        entidad_activa
-    )
-
-    fig_mapa.add_trace(
-        go.Choropleth(
-            geojson=geojson_mexico,
-            locations=[nombre_mapa_activo],
-            featureidkey="properties.name",
-            z=[1],
-
-            colorscale=[
-                [0, "rgba(0,0,0,0)"],
-                [1, "rgba(0,0,0,0)"]
-            ],
-
-            showscale=False,
-
-            marker_line_color="#111111",
-            marker_line_width=4,
-
-            hoverinfo="skip"
-        )
-    )
-
-# --------------------------------------------------
-# AJUSTAR VISTA GEOGRAFICA
-# --------------------------------------------------
-
-
-fig_mapa.update_geos(
-    fitbounds="locations",
-    visible=False
-)
-
-
-# --------------------------------------------------
-# FORMATO GENERAL
-# --------------------------------------------------
-
-fig_mapa.update_layout(
-
-    coloraxis_colorbar=dict(
-        title="Grado de<br>consolidación",
-        tickvals=[0, 20, 40, 60, 80, 100],
-        ticksuffix=""
-    ),
-
-    margin=dict(
-        l=0,
-        r=0,
-        t=10,
-        b=0
-    ),
-
-    height=600
-)
-
-# --------------------------------------------------
-# MOSTRAR MAPA
-# --------------------------------------------------
-
-st.subheader("Grado de consolidación")
-
-evento_mapa = st.plotly_chart(
-    fig_mapa,
-    use_container_width=True,
-    key="mapa_mexico",
-    on_select="rerun",
-    selection_mode="points"
-)
-
-# --------------------------------------------------
-# CAPTURAR CLIC EN EL MAPA
-# --------------------------------------------------
-
-if evento_mapa.selection.points:
-
-    punto = evento_mapa.selection.points[0]
-
-    if "location" in punto:
-
-        entidad_clic = punto["location"]
-
-        # El GeoJSON llama "México" al Estado de México
-        equivalencias_inversas = {
-            "México": "Estado de México"
-        }
-
-        entidad_clic = equivalencias_inversas.get(
-            entidad_clic,
-            entidad_clic
-        )
-
-        if entidad_clic != st.session_state["entidad_activa"]:
-
-            st.session_state["entidad_activa"] = entidad_clic
-
-            st.rerun()
-
-
-# --------------------------------------------------
-# 9. INDICADORES DE GRADO DE CONSOLIDACION
-# --------------------------------------------------
-
-st.divider()
-
-if entidad_seleccionada == "México":
-
-    datos_validos = datos_periodo[
-        datos_periodo["tiene_informacion"] == 1
-    ]
-
-    grado_total = datos_validos[
-        "grado_cons_total"
-    ].mean()
-
-    grado_implementacion = datos_validos[
-        "grado_cons_implem_num"
-    ].mean()
-
-    grado_indicadores = datos_validos[
-        "grado_cons_indic_num"
-    ].mean()
-
-    grado_sye = datos_validos[
-        "grado_cons_sye_num"
-    ].mean()
-
-    titulo_territorio = "México"
-
-else:
-
-    fila = datos_periodo[
-        datos_periodo["nom_ent"] == entidad_seleccionada
-    ].iloc[0]
-
-    if fila["tiene_informacion"] == 0:
-
-        st.info(
-            "Sin información disponible para esta entidad en el periodo seleccionado."
-        )
-
-        st.stop()
-
-    grado_total = fila["grado_cons_total"]
-    grado_implementacion = fila["grado_cons_implem_num"]
-    grado_indicadores = fila["grado_cons_indic_num"]
-    grado_sye = fila["grado_cons_sye_num"]
-
-    titulo_territorio = entidad_seleccionada
-
-# --------------------------------------------------
-# 9. TARJETA PRINCIPAL
-# --------------------------------------------------
-
-st.markdown(f"### {titulo_territorio}")
-
-st.metric(
-    label="Grado de consolidación",
-    value=f"{grado_total:.1f} / 100"
-)
-
-
-# --------------------------------------------------
-# 10. COMPONENTES DEL GRADO DE CONSOLIDACION
-# --------------------------------------------------
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-
-    st.metric(
-        label="Implementación",
-        value=f"{grado_implementacion * 100:.1f}%"
-    )
-
-with col2:
-
-    st.metric(
-        label="Indicadores",
-        value=f"{grado_indicadores * 100:.1f}%"
-    )
-
-with col3:
-
-    st.metric(
-        label="Seguimiento y evaluación",
-        value=f"{grado_sye * 100:.1f}%"
-    )
-
-
-# --------------------------------------------------
-# 11. NOTA METODOLOGICA
-# --------------------------------------------------
-
-if entidad_seleccionada == "México":
-
-    st.caption(
-        f"Promedio nacional calculado con {len(datos_validos)} entidades con información disponible."
-    )
-
-#### SECCION DESIGNACIONES ####
-
-st.divider()
-
-st.subheader("Designaciones Vigentes")
-
-# --------------------------------------------------
-# 13.1 CALCULOS DE DESIGNACIONES
-# --------------------------------------------------
-
-if entidad_seleccionada == "México":
-
-    # Se consideran únicamente las entidades
-    # con información disponible
-    datos_designaciones = datos_periodo[
-        datos_periodo["tiene_informacion"] == 1
-    ].copy()
-
-
-    # --------------------------------------------------
-    # TITULAR SESEA
-    # --------------------------------------------------
-
-    titular_vigentes = int(
-        datos_designaciones["des_vig_tit"].sum()
-    )
-
-    titular_pendientes = int(
-        datos_designaciones["des_pend_tit"].sum()
-    )
-
-    titular_total = (
-        titular_vigentes
-        + titular_pendientes
-    )
-
-
-    # --------------------------------------------------
-    # COMITE DE SELECCION
-    # --------------------------------------------------
-
-    cs_vigentes = int(
-        datos_designaciones["des_vig_cs"].sum()
-    )
-
-    cs_pendientes = int(
-        datos_designaciones["des_pend_cs"].sum()
-    )
-
-    cs_total = (
-        cs_vigentes
-        + cs_pendientes
-    )
-
-
-    # --------------------------------------------------
-    # COMITE DE PARTICIPACION CIUDADANA
-    # --------------------------------------------------
-
-    cpc_vigentes = int(
-        datos_designaciones["des_vig_cpc"].sum()
-    )
-
-    cpc_pendientes = int(
-        datos_designaciones["des_pend_cpc"].sum()
-    )
-
-    cpc_total = (
-        cpc_vigentes
-        + cpc_pendientes
-    )
-
-
-    # --------------------------------------------------
-    # COMITE COORDINADOR
-    # --------------------------------------------------
-
-    cc_vigentes = int(
-        datos_designaciones["des_vig_cc"].sum()
-    )
-
-    cc_pendientes = int(
-        datos_designaciones["des_pend_cc"].sum()
-    )
-
-    cc_total = (
-        cc_vigentes
-        + cc_pendientes
-    )
-
-
-    # --------------------------------------------------
-    # COMITE RECTOR DEL SISTEMA DE FISCALIZACION
-    # --------------------------------------------------
-
-    crsf_vigentes = int(
-        datos_designaciones["des_vig_crsf"].sum()
-    )
-
-    crsf_pendientes = int(
-        datos_designaciones["des_pend_crsf"].sum()
-    )
-
-    crsf_total = (
-        crsf_vigentes
-        + crsf_pendientes
-    )
-
-
-else:
-
-    # --------------------------------------------------
-    # DATOS DE LA ENTIDAD SELECCIONADA
-    # --------------------------------------------------
-
-    fila_designaciones = datos_periodo[
-        datos_periodo["nom_ent"] == entidad_seleccionada
-    ].iloc[0]
-
-
-    # --------------------------------------------------
-    # ENTIDAD SIN INFORMACION
-    # --------------------------------------------------
-
-    if fila_designaciones["tiene_informacion"] == 0:
-
-        titular_vigentes = 0
-        titular_pendientes = 0
-        titular_total = 0
-
-        cs_vigentes = 0
-        cs_pendientes = 0
-        cs_total = 0
-
-        cpc_vigentes = 0
-        cpc_pendientes = 0
-        cpc_total = 0
-
-        cc_vigentes = 0
-        cc_pendientes = 0
-        cc_total = 0
-
-        crsf_vigentes = 0
-        crsf_pendientes = 0
-        crsf_total = 0
-
-
-    # --------------------------------------------------
-    # ENTIDAD CON INFORMACION
-    # --------------------------------------------------
-
-    else:
-
-        # TITULAR SESEA
-
-        titular_vigentes = int(
-            fila_designaciones["des_vig_tit"]
-        )
-
-        titular_pendientes = int(
-            fila_designaciones["des_pend_tit"]
-        )
-
-        titular_total = (
-            titular_vigentes
-            + titular_pendientes
-        )
-
-
-        # COMITE DE SELECCION
-
-        cs_vigentes = int(
-            fila_designaciones["des_vig_cs"]
-        )
-
-        cs_pendientes = int(
-            fila_designaciones["des_pend_cs"]
-        )
-
-        cs_total = (
-            cs_vigentes
-            + cs_pendientes
-        )
-
-
-        # COMITE DE PARTICIPACION CIUDADANA
-
-        cpc_vigentes = int(
-            fila_designaciones["des_vig_cpc"]
-        )
-
-        cpc_pendientes = int(
-            fila_designaciones["des_pend_cpc"]
-        )
-
-        cpc_total = (
-            cpc_vigentes
-            + cpc_pendientes
-        )
-
-
-        # COMITE COORDINADOR
-
-        cc_vigentes = int(
-            fila_designaciones["des_vig_cc"]
-        )
-
-        cc_pendientes = int(
-            fila_designaciones["des_pend_cc"]
-        )
-
-        cc_total = (
-            cc_vigentes
-            + cc_pendientes
-        )
-
-
-        # COMITE RECTOR DEL SISTEMA DE FISCALIZACION
-
-        crsf_vigentes = int(
-            fila_designaciones["des_vig_crsf"]
-        )
-
-        crsf_pendientes = int(
-            fila_designaciones["des_pend_crsf"]
-        )
-
-        crsf_total = (
-            crsf_vigentes
-            + crsf_pendientes
-        )
-
-
-# --------------------------------------------------
-# 13.2 TOTAL GENERAL DE DESIGNACIONES
-# --------------------------------------------------
-
-total_vigentes = (
-    titular_vigentes
-    + cs_vigentes
-    + cpc_vigentes
-    + cc_vigentes
-    + crsf_vigentes
-)
-
-total_pendientes = (
-    titular_pendientes
-    + cs_pendientes
-    + cpc_pendientes
-    + cc_pendientes
-    + crsf_pendientes
-)
-
-total_designaciones = (
-    total_vigentes
-    + total_pendientes
-)
-
-
-# TEXTO PARA TITULAR SESEA #
-
-if entidad_seleccionada == "México":
-    titular_visual = f"{titular_vigentes} de {titular_total}"
-else:
-    titular_visual = "Sí" if titular_vigentes > 0 else "No"
-
-# --------------------------------------------------
-# 13.3 ESTILOS CSS DE LAS TARJETAS
-# --------------------------------------------------
-
-st.html(
-    """
-    <style>
-
-    .designacion-card {
-        border: 1px solid #D9D9D9;
-        border-radius: 10px;
-        padding: 18px 10px;
-        text-align: center;
-        background-color: #FFFFFF;
-        height: 210px;
-        box-sizing: border-box;
-
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .designacion-titulo {
-        font-size: 15px;
-        font-weight: 600;
-        line-height: 1.25;
-        color: #333333;
-        min-height: 55px;
-
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-    }
-
-    .designacion-icono {
-        font-size: 30px;
-        line-height: 1;
-        margin: 6px 0;
-    }
-
-    .designacion-valor {
-        font-size: 32px;
-        font-weight: 700;
-        color: #1F4E79;
-        line-height: 1.1;
-        text-align: center;
-    }
-
-    .designacion-unidad {
-        font-size: 12px;
-        color: #6B7280;
-        min-height: 20px;
-        text-align: center;
-    }
-
-    .total-designaciones {
-        border: 1px solid #D9D9D9;
-        border-radius: 10px;
-        padding: 12px 20px;
-        background-color: #F7F7F7;
-        text-align: center;
-        margin-top: 16px;
-        box-sizing: border-box;
-    }
-
-    .total-designaciones-titulo {
-        font-size: 13px;
-        font-weight: 600;
-        color: #555555;
-    }
-
-    .total-designaciones-valor {
-        font-size: 34px;
-        font-weight: 700;
-        color: #1F4E79;
-        margin-top: 4px;
-    }
-
-    </style>
-    """
-)
-
-
-# --------------------------------------------------
-# 13.4 CREAR LAS CINCO COLUMNAS
-# --------------------------------------------------
-
-col_titular, col_cs, col_cpc, col_cc, col_crsf = st.columns(5)
-
-
-# --------------------------------------------------
-# TITULAR SESEA
-# --------------------------------------------------
-
-with col_titular:
-
-    st.html(
-        f"""
-        <div class="designacion-card">
-
-            <div class="designacion-titulo">
-                Titular SESEA
-            </div>
-
-            <div class="designacion-icono">
-                👤
-            </div>
-
-            <div class="designacion-valor">
-                {titular_visual}
-            </div>
-
-            <div class="designacion-unidad">
-                Titular vigente
-            </div>
-
-        </div>
-        """
-    )
-
-
-# --------------------------------------------------
-# COMITE DE SELECCION
-# --------------------------------------------------
-
-with col_cs:
-
-    st.html(
-        f"""
-        <div class="designacion-card">
-
-            <div class="designacion-titulo">
-                Comité de Selección (CS)
-            </div>
-
-            <div class="designacion-icono">
-                👥
-            </div>
-
-            <div class="designacion-valor">
-                {cs_vigentes} de {cs_total}
-            </div>
-
-            <div class="designacion-unidad">
-                Designaciones vigentes
-            </div>
-
-        </div>
-        """
-    )
-
-
-# --------------------------------------------------
-# COMITE DE PARTICIPACION CIUDADANA
-# --------------------------------------------------
-
-with col_cpc:
-
-    st.html(
-        f"""
-        <div class="designacion-card">
-
-            <div class="designacion-titulo">
-                Comité de Participación Ciudadana (CPC)
-            </div>
-
-            <div class="designacion-icono">
-                👥
-            </div>
-
-            <div class="designacion-valor">
-                {cpc_vigentes} de {cpc_total}
-            </div>
-
-            <div class="designacion-unidad">
-                Designaciones vigentes
-            </div>
-
-        </div>
-        """
-    )
-
-
-# --------------------------------------------------
-# COMITE COORDINADOR
-# --------------------------------------------------
-
-with col_cc:
-
-    st.html(
-        f"""
-        <div class="designacion-card">
-
-            <div class="designacion-titulo">
-                Comité Coordinador (CC)
-            </div>
-
-            <div class="designacion-icono">
-                👥
-            </div>
-
-            <div class="designacion-valor">
-                {cc_vigentes} de {cc_total}
-            </div>
-
-            <div class="designacion-unidad">
-                Designaciones vigentes
-            </div>
-
-        </div>
-        """
-    )
-
-
-# --------------------------------------------------
-# COMITE RECTOR DEL SISTEMA DE FISCALIZACION
-# --------------------------------------------------
-
-with col_crsf:
-
-    st.html(
-        f"""
-        <div class="designacion-card">
-
-            <div class="designacion-titulo">
-                Comité Rector del Sistema de Fiscalización (CRSF)
-            </div>
-
-            <div class="designacion-icono">
-                👥
-            </div>
-
-            <div class="designacion-valor">
-                {crsf_vigentes} de {crsf_total}
-            </div>
-
-            <div class="designacion-unidad">
-                Designaciones vigentes
-            </div>
-
-        </div>
-        """
-    )
-
-
-# --------------------------------------------------
-# 13.5 TOTAL DE DESIGNACIONES
-# --------------------------------------------------
-
-col_espacio, col_total = st.columns([4, 1])
-
-with col_total:
-
-    st.html(
-        f"""
-        <div class="total-designaciones">
-
-            <div class="total-designaciones-titulo">
-                TOTAL DESIGNACIONES
-            </div>
-
-            <div class="total-designaciones-valor">
-                {total_vigentes} de {total_designaciones}
-            </div>
-
-        </div>
-        """
-    )
-
-# SECCION ENTES INTERCONECTADOS A LA PDN #
-
-st.divider()
-
-st.subheader("Entes Interconectados a la PDN")
-
-# --------------------------------------------------
-# 14.1 CALCULOS PDN
-# --------------------------------------------------
-
-if entidad_seleccionada == "México":
-
-    # Considerar solo entidades con informacion disponible
-    datos_pdn = datos_periodo[
-        datos_periodo["tiene_informacion"] == 1
-    ].copy()
-
-
-    # SISTEMA 1
-
-    s1_entes = int(
-        datos_pdn["s1_entes"].sum()
-    )
-
-    s1_total = int(
-        datos_pdn["s1_total"].sum()
-    )
-
-    cumplimiento_s1 = (
-        (s1_entes / s1_total) * 100
-        if s1_total > 0
-        else 0
-    )
-
-
-    # SISTEMA 2
-
-    s2_entes = int(
-        datos_pdn["s2_entes"].sum()
-    )
-
-    s2_total = int(
-        datos_pdn["s2_total"].sum()
-    )
-
-    cumplimiento_s2 = (
-        (s2_entes / s2_total) * 100
-        if s2_total > 0
-        else 0
-    )
-
-
-    # SISTEMA 3
-
-    s3_entes = int(
-        datos_pdn["s3_entes"].sum()
-    )
-
-    s3_total = int(
-        datos_pdn["s3_total"].sum()
-    )
-
-    cumplimiento_s3 = (
-        (s3_entes / s3_total) * 100
-        if s3_total > 0
-        else 0
-    )
-
-
-    # SISTEMA 6
-
-    s6_entes = int(
-        datos_pdn["s6_entes"].sum()
-    )
-
-    s6_total = int(
-        datos_pdn["s6_total"].sum()
-    )
-
-    cumplimiento_s6 = (
-        (s6_entes / s6_total) * 100
-        if s6_total > 0
-        else 0
-    )
-
-
-else:
-
-    # Tomar fila de la entidad seleccionada
-    fila_pdn = datos_periodo[
-        datos_periodo["nom_ent"] == entidad_seleccionada
-    ].iloc[0]
-
-
-    # --------------------------------------------------
-    # ENTIDAD SIN INFORMACION
-    # --------------------------------------------------
-
-    if fila_pdn["tiene_informacion"] == 0:
-
-        s1_entes = 0
-        s1_total = 0
-        cumplimiento_s1 = 0
-
-        s2_entes = 0
-        s2_total = 0
-        cumplimiento_s2 = 0
-
-        s3_entes = 0
-        s3_total = 0
-        cumplimiento_s3 = 0
-
-        s6_entes = 0
-        s6_total = 0
-        cumplimiento_s6 = 0
-
-
-    # --------------------------------------------------
-    # ENTIDAD CON INFORMACION
-    # --------------------------------------------------
-
-    else:
-
-        # SISTEMA 1
-
-        s1_entes = int(
-            fila_pdn["s1_entes"]
-        )
-
-        s1_total = int(
-            fila_pdn["s1_total"]
-        )
-
-        cumplimiento_s1 = float(
-            fila_pdn["cumplimiento_s1"]
-        ) * 100
-
-
-        # SISTEMA 2
-
-        s2_entes = int(
-            fila_pdn["s2_entes"]
-        )
-
-        s2_total = int(
-            fila_pdn["s2_total"]
-        )
-
-        cumplimiento_s2 = float(
-            fila_pdn["cumplimiento_s2"]
-        ) * 100
-
-
-        # SISTEMA 3
-
-        s3_entes = int(
-            fila_pdn["s3_entes"]
-        )
-
-        s3_total = int(
-            fila_pdn["s3_total"]
-        )
-
-        cumplimiento_s3 = float(
-            fila_pdn["cumplimiento_s3"]
-        ) * 100
-
-
-        # SISTEMA 6
-
-        s6_entes = int(
-            fila_pdn["s6_entes"]
-        )
-
-        s6_total = int(
-            fila_pdn["s6_total"]
-        )
-
-        cumplimiento_s6 = float(
-            fila_pdn["cumplimiento_s6"]
-        ) * 100
-
-
-# CALCULAR TOTAL DE INTERCONEXIONES #
-
-total_interconexiones = (
-    s1_entes
-    + s2_entes
-    + s3_entes
-    + s6_entes
-)
-
-total_interconexiones_posibles = (
-    s1_total
-    + s2_total
-    + s3_total
-    + s6_total
-)
-
-cumplimiento_total_pdn = (
-    (total_interconexiones / total_interconexiones_posibles) * 100
-    if total_interconexiones_posibles > 0
-    else 0
-)
-
-# --------------------------------------------------
-# 14.2 ESTILOS CSS
-# --------------------------------------------------
-
-st.html(
-    """
-    <style>
-
-    .pdn-card {
-        border: 1px solid #D9D9D9;
-        border-radius: 10px;
-        padding: 18px 12px;
-        text-align: center;
-        background-color: #FFFFFF;
-        height: 230px;
-        box-sizing: border-box;
-
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .pdn-titulo {
-        font-size: 15px;
-        font-weight: 600;
-        line-height: 1.25;
-        color: #333333;
-        min-height: 40px;
-
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .pdn-subtitulo {
-        font-size: 12px;
-        color: #6B7280;
-        min-height: 34px;
-
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-    }
-
-    .pdn-icono {
-        font-size: 30px;
-        line-height: 1;
-        margin: 4px 0;
-    }
-
-    .pdn-valor {
-        font-size: 31px;
-        font-weight: 700;
-        color: #1F4E79;
-        line-height: 1.1;
-    }
-
-    .pdn-porcentaje {
-        font-size: 22px;
-        font-weight: 700;
-        color: #4B5563;
-        line-height: 1.1;
-    }
-
-    .pdn-unidad {
-        font-size: 12px;
-        color: #6B7280;
-    }
-
-    .pdn-total-card {
-    border: 1px solid #D9D9D9;
-    border-radius: 10px;
-    padding: 18px 20px;
-    background-color: #F7F7F7;
-    text-align: center;
-    margin-top: 16px;
-    box-sizing: border-box;
-    width:100%;
-    min-height: 145px;
-
-    display: flex;
-    flex-direction: column;
-    align-items: center
-    justify-content: center;
-    }
-
-    .pdn-total-titulo {
-    font-size: 13px;
-    font-weight: 600;
-    color: #555555;
-    white-space: nowrap;
-    }
-
-   .pdn-total-valor {
-    font-size: 34px;
-    font-weight: 700;
-    color: #1F4E79;
-    margin-top: 4px;
-    }
-
-    .pdn-total-porcentaje {
-    font-size: 20px;
-    font-weight: 700;
-    color:  #4B5563;
-    margin-top: 6px;
-    line-height: 1.1;
-    white-space: nowrap;
-    }
-
-    </style>
-    """
-)
-
-
-# --------------------------------------------------
-# 14.3 CREAR LAS CUATRO COLUMNAS
-# --------------------------------------------------
-
-col_s1, col_s2, col_s3, col_s6 = st.columns(4)
-
-
-# --------------------------------------------------
-# SISTEMA 1
-# --------------------------------------------------
-
-with col_s1:
-
-    st.html(
-        f"""
-        <div class="pdn-card">
-
-            <div class="pdn-titulo">
-                Sistema 1
-            </div>
-
-            <div class="pdn-subtitulo">
-                Declaraciones patrimoniales y de intereses
-            </div>
-
-            <div class="pdn-icono">
-                🔗
-            </div>
-
-            <div class="pdn-valor">
-                {s1_entes} de {s1_total}
-            </div>
-
-            <div class="pdn-porcentaje">
-                {cumplimiento_s1:.1f}%
-            </div>
-
-            <div class="pdn-unidad">
-                Entes interconectados
-            </div>
-
-        </div>
-        """
-    )
-
-
-# --------------------------------------------------
-# SISTEMA 2
-# --------------------------------------------------
-
-with col_s2:
-
-    st.html(
-        f"""
-        <div class="pdn-card">
-
-            <div class="pdn-titulo">
-                Sistema 2
-            </div>
-
-            <div class="pdn-subtitulo">
-                Servidores públicos que intervienen en contrataciones
-            </div>
-
-            <div class="pdn-icono">
-                🔗
-            </div>
-
-            <div class="pdn-valor">
-                {s2_entes} de {s2_total}
-            </div>
-
-            <div class="pdn-porcentaje">
-                {cumplimiento_s2:.1f}%
-            </div>
-
-            <div class="pdn-unidad">
-                Entes interconectados
-            </div>
-
-        </div>
-        """
-    )
-
-
-# --------------------------------------------------
-# SISTEMA 3
-# --------------------------------------------------
-
-with col_s3:
-
-    st.html(
-        f"""
-        <div class="pdn-card">
-
-            <div class="pdn-titulo">
-                Sistema 3
-            </div>
-
-            <div class="pdn-subtitulo">
-                Servidores públicos y particulares sancionados
-            </div>
-
-            <div class="pdn-icono">
-                🔗
-            </div>
-
-            <div class="pdn-valor">
-                {s3_entes} de {s3_total}
-            </div>
-
-            <div class="pdn-porcentaje">
-                {cumplimiento_s3:.1f}%
-            </div>
-
-            <div class="pdn-unidad">
-                Entes interconectados
-            </div>
-
-        </div>
-        """
-    )
-
-
-# --------------------------------------------------
-# SISTEMA 6
-# --------------------------------------------------
-
-with col_s6:
-
-    st.html(
-        f"""
-        <div class="pdn-card">
-
-            <div class="pdn-titulo">
-                Sistema 6
-            </div>
-
-            <div class="pdn-subtitulo">
-                Información pública de contrataciones
-            </div>
-
-            <div class="pdn-icono">
-                🔗
-            </div>
-
-            <div class="pdn-valor">
-                {s6_entes} de {s6_total}
-            </div>
-
-            <div class="pdn-porcentaje">
-                {cumplimiento_s6:.1f}%
-            </div>
-
-            <div class="pdn-unidad">
-                Entes interconectados
-            </div>
-
-        </div>
-        """
-    )
-
-    # TOTAL DE INTERCONEXIONES #
-
-    col_espacio_pdn, col_total_pdn = st.columns([1.0, 0.5])
-
-    with col_total_pdn:
+    with col_titulo:
 
         st.html(
-            f"""
-            <div class="pdn-total-card">
-
-            <div class="pdn-total-titulo">
-                 TOTAL INTERCONEXIONES
+            """
+            <div class="titulo-barra">Informe Trimestral SESEA</div>
+            <div class="subtitulo-barra">
+                Secretarías Ejecutivas de los Sistemas Estatales Anticorrupción
             </div>
+            """
+        )
 
-            <div class="pdn-total-valor">
-                 {total_interconexiones} de {total_interconexiones_posibles}
-            <div>
+    with col_anio:
 
-            <div class="pdn-total-porcentaje">
-                {cumplimiento_total_pdn:.1f}%
-            <div>
+        anio = st.selectbox(
+            "Año",
+            sorted(datos["anio"].unique(), reverse=True)
+        )
 
-         </div>   
-         """      
-)
+    with col_trimestre:
+
+        trimestres_disponibles = sorted(
+            datos.loc[datos["anio"] == anio, "trimestre"].unique()
+        )
+
+        trimestre = st.selectbox(
+            "Trimestre",
+            trimestres_disponibles,
+            format_func=texto_trimestre
+        )
+
+    # Datos del periodo seleccionado
+    datos_periodo = datos[
+        (datos["anio"] == anio)
+        & (datos["trimestre"] == trimestre)
+    ].copy()
+
+    entidades = [NACIONAL] + sorted(
+        datos_periodo["nom_ent"].tolist()
+    )
+
+    # Entidad activa (se sincroniza con el clic en el mapa
+    # y con la entidad indicada en la URL)
+    if "entidad_activa" not in st.session_state:
+
+        entidad_url = st.query_params.get("entidad")
+
+        st.session_state["entidad_activa"] = (
+            entidad_url
+            if entidad_url in entidades
+            else NACIONAL
+        )
+
+    if st.session_state["entidad_activa"] not in entidades:
+        st.session_state["entidad_activa"] = NACIONAL
+
+    if (
+        "selector_entidad" not in st.session_state
+        or st.session_state["selector_entidad"]
+        != st.session_state["entidad_activa"]
+    ):
+        st.session_state["selector_entidad"] = (
+            st.session_state["entidad_activa"]
+        )
+
+    def actualizar_desde_selector():
+
+        st.session_state["entidad_activa"] = (
+            st.session_state["selector_entidad"]
+        )
+
+    with col_entidad:
+
+        st.selectbox(
+            "Entidad",
+            entidades,
+            key="selector_entidad",
+            on_change=actualizar_desde_selector
+        )
+
+
+entidad_seleccionada = st.session_state["entidad_activa"]
+es_nacional = entidad_seleccionada == NACIONAL
+
+# La entidad se refleja en la URL para poder compartir la vista
+if es_nacional:
+    if "entidad" in st.query_params:
+        del st.query_params["entidad"]
+elif st.query_params.get("entidad") != entidad_seleccionada:
+    st.query_params["entidad"] = entidad_seleccionada
 
 
 # --------------------------------------------------
-# LÍNEA DEL TIEMPO - DATOS Y VISUAL
+# 8. CONFIGURACION DE INDICADORES
 # --------------------------------------------------
 
-st.markdown("## Avances de la implementación")
-st.markdown("### Línea del Tiempo")
+DESIGNACIONES = [
+    {
+        "clave": "tit",
+        "titulo": "Titular SESEA",
+        "icono": "persona"
+    },
+    {
+        "clave": "cs",
+        "titulo": "Comité de Selección",
+        "icono": "grupo"
+    },
+    {
+        "clave": "cpc",
+        "titulo": "Comité de Participación Ciudadana",
+        "icono": "grupo"
+    },
+    {
+        "clave": "cc",
+        "titulo": "Comité Coordinador",
+        "icono": "grupo"
+    },
+    {
+        "clave": "crsf",
+        "titulo": "Comité Rector del Sistema de Fiscalización",
+        "icono": "grupo"
+    }
+]
 
+SISTEMAS_PDN = [
+    {
+        "clave": "s1",
+        "titulo": "S1",
+        "descripcion": "Declaraciones patrimoniales y de intereses"
+    },
+    {
+        "clave": "s2",
+        "titulo": "S2",
+        "descripcion": "Servidores públicos en contrataciones"
+    },
+    {
+        "clave": "s3",
+        "titulo": "S3",
+        "descripcion": "Servidores públicos y particulares sancionados"
+    },
+    {
+        "clave": "s6",
+        "titulo": "S6",
+        "descripcion": "Información pública de contrataciones"
+    }
+]
 
-# --------------------------------------------------
-# CONFIGURACIÓN DE ETAPAS
-# --------------------------------------------------
-
-etapas_config = [
+ETAPAS = [
     {
         "nombre": "Aprobación PEA",
         "columna": "fecha_aprobacion_pea",
-        "descripcion": "Aprobación formal de la Política Estatal Anticorrupción.",
-        "icono": "✓"
+        "icono": "lista"
     },
     {
         "nombre": "Aprobación del PI-PEA",
         "columna": "fecha_aprobacion_pipea",
-        "descripcion": "Aprobación del programa para implementar la política estatal.",
-        "icono": "▣"
+        "icono": "grading"
     },
     {
         "nombre": "Ejecución del PI-PEA",
         "columna": "fecha_ejecucion_pipea",
-        "descripcion": "Inicio de la ejecución del programa de implementación.",
-        "icono": "▶"
+        "icono": "play"
     },
     {
         "nombre": "Metodología de seguimiento y evaluación",
         "columna": "fecha_aprobacion_sye",
-        "descripcion": "Aprobación del mecanismo de seguimiento y evaluación.",
-        "icono": "⌕"
+        "icono": "grafica"
     },
     {
         "nombre": "Evaluación de la política",
         "columna": "fecha_evaluacion",
-        "descripcion": "Realización de la evaluación de la política estatal.",
-        "icono": "✓"
+        "icono": "check"
     }
 ]
 
+# Cada componente aporta puntos al grado de consolidación.
+# Los tres suman los 100 puntos del índice.
+COMPONENTES_GRADO = [
+    ("Implementación", "grado_cons_implem_num", 67.5),
+    ("Indicadores", "grado_cons_indic_num", 7.5),
+    ("Seguimiento y evaluación", "grado_cons_sye_num", 25.0)
+]
+
+# Etiqueta corta para la gráfica y nombre completo para el detalle
+ETIQUETAS_PAA = {
+    "paa_osf": (
+        "Auditoría Superior",
+        "Auditoría Superior"
+    ),
+    "paa_sesea": (
+        "SESEA",
+        "Secretaría Ejecutiva del Sistema Estatal Anticorrupción"
+    ),
+    "paa_fecc": (
+        "Fiscalía Anticorrupción",
+        "Fiscalía Especializada Contra la Corrupción"
+    ),
+    "paa_contraloria": (
+        "Función Pública / SABG",
+        "Secretaría Anticorrupción y Buen Gobierno / Función Pública"
+    ),
+    "paa_cpc": (
+        "Participación Ciudadana",
+        "Comité de Participación Ciudadana"
+    ),
+    "paa_judicatura": (
+        "Judicatura",
+        "Consejo de la Judicatura"
+    ),
+    "paa_tja": (
+        "Justicia Administrativa",
+        "Tribunal de Justicia Administrativa"
+    ),
+    "paa_tdf": (
+        "Coord. de Vigilancia",
+        "Coordinación de Vigilancia"
+    ),
+    "paa_sesna": (
+        "SESNA",
+        "Secretaría Ejecutiva del Sistema Nacional Anticorrupción"
+    )
+}
+
 
 # --------------------------------------------------
-# VISTA MÉXICO
+# 9. CALCULO DE INDICADORES
 # --------------------------------------------------
 
-if entidad_seleccionada == "México":
+def calcular_indicadores(datos_periodo, entidad):
+    """Calcula todos los indicadores de la vista seleccionada.
 
-    datos_timeline = datos_periodo[
-        datos_periodo["tiene_informacion"] == 1
-    ].copy()
+    Se trabaja siempre con un DataFrame base: todas las
+    entidades con información (vista nacional) o la fila de
+    la entidad seleccionada.
+    """
 
-    total_estados = len(datos_timeline)
+    nacional = entidad == NACIONAL
 
-    etapas_timeline = []
+    if nacional:
+        base = datos_periodo[
+            datos_periodo["tiene_informacion"] == 1
+        ].copy()
+    else:
+        base = datos_periodo[
+            (datos_periodo["nom_ent"] == entidad)
+            & (datos_periodo["tiene_informacion"] == 1)
+        ].copy()
 
-    for etapa in etapas_config:
+    indicadores = {
+        "nacional": nacional,
+        "hay_informacion": not base.empty,
+        "entidades": int(len(base))
+    }
 
-        total_con_dato = (
-            pd.to_datetime(
-                datos_timeline[etapa["columna"]],
-                errors="coerce"
-            )
-            .notna()
-            .sum()
-        )
+    # ---------- Grado de consolidación ----------
 
-        etapas_timeline.append(
+    indicadores["grado_total"] = (
+        None if base.empty else base["grado_cons_total"].mean()
+    )
+
+    indicadores["componentes"] = [
+        {
+            "nombre": nombre,
+            "puntos": (
+                None
+                if base.empty
+                else base[columna].mean() * 100
+            ),
+            "maximo": maximo
+        }
+        for nombre, columna, maximo in COMPONENTES_GRADO
+    ]
+
+    # ---------- Designaciones ----------
+
+    designaciones = []
+
+    for posicion, config in enumerate(DESIGNACIONES):
+
+        if base.empty:
+            vigentes = 0
+            total = 0
+        else:
+            vigentes = int(base[f"des_vig_{config['clave']}"].sum())
+            pendientes = int(base[f"des_pend_{config['clave']}"].sum())
+            total = vigentes + pendientes
+
+        designaciones.append(
             {
-                "nombre": etapa["nombre"],
-                "descripcion": etapa["descripcion"],
-                "icono": etapa["icono"],
-                "valor": f"{total_con_dato} de {total_estados}",
-                "activa": total_con_dato > 0,
-                "conteo": int(total_con_dato)
+                **config,
+                "color": COLORES_TARJETAS[posicion],
+                "vigentes": vigentes,
+                "total": total
             }
         )
 
+    indicadores["designaciones"] = designaciones
 
-# --------------------------------------------------
-# VISTA ESTATAL
-# --------------------------------------------------
+    indicadores["designaciones_vigentes"] = sum(
+        item["vigentes"] for item in designaciones
+    )
 
-else:
+    indicadores["designaciones_total"] = sum(
+        item["total"] for item in designaciones
+    )
 
-    fila_timeline = datos_periodo[
-        datos_periodo["nom_ent"] == entidad_seleccionada
-    ]
+    # ---------- Entes interconectados a la PDN ----------
 
-    etapas_timeline = []
+    sistemas = []
 
-    if not fila_timeline.empty:
+    for config in SISTEMAS_PDN:
 
-        fila_timeline = fila_timeline.iloc[0]
+        clave = config["clave"]
 
-        for etapa in etapas_config:
+        if base.empty:
+            entes = 0
+            total = 0
+            porcentaje = 0.0
+        else:
+            entes = int(base[f"{clave}_entes"].sum())
+            total = int(base[f"{clave}_total"].sum())
 
-            fecha = fila_timeline[etapa["columna"]]
-
-            if pd.notna(fecha):
-
-                fecha = pd.to_datetime(
-                    fecha,
-                    errors="coerce"
-                )
-
-                if pd.notna(fecha):
-                    valor = fecha.strftime("%d/%m/%Y")
-                    activa = True
-
-                else:
-                    valor = "Sin información"
-                    activa = False
-
+            if nacional:
+                # A nivel nacional se calcula sobre los totales
+                porcentaje = (entes / total * 100) if total else 0.0
             else:
-                valor = "Sin información"
-                activa = False
+                # A nivel estatal se respeta el dato reportado
+                porcentaje = float(
+                    base[f"cumplimiento_{clave}"].iloc[0]
+                ) * 100
 
-            etapas_timeline.append(
+        sistemas.append(
+            {
+                **config,
+                "entes": entes,
+                "total": total,
+                "porcentaje": porcentaje
+            }
+        )
+
+    indicadores["sistemas"] = sistemas
+
+    indicadores["pdn_entes"] = sum(
+        item["entes"] for item in sistemas
+    )
+
+    indicadores["pdn_total"] = sum(
+        item["total"] for item in sistemas
+    )
+
+    indicadores["pdn_porcentaje"] = (
+        indicadores["pdn_entes"] / indicadores["pdn_total"] * 100
+        if indicadores["pdn_total"]
+        else 0.0
+    )
+
+    # ---------- Avances de la implementación ----------
+
+    etapas = []
+
+    for config in ETAPAS:
+
+        if base.empty:
+            etapas.append(
                 {
-                    "nombre": etapa["nombre"],
-                    "descripcion": etapa["descripcion"],
-                    "icono": etapa["icono"],
-                    "valor": valor,
+                    **config,
+                    "valor": "Sin información",
+                    "activa": False
+                }
+            )
+            continue
+
+        fechas = pd.to_datetime(
+            base[config["columna"]],
+            errors="coerce"
+        )
+
+        if nacional:
+            conteo = int(fechas.notna().sum())
+
+            etapas.append(
+                {
+                    **config,
+                    "valor": f"{conteo} de {len(base)}",
+                    "activa": conteo > 0
+                }
+            )
+        else:
+            fecha = fechas.iloc[0]
+            activa = pd.notna(fecha)
+
+            etapas.append(
+                {
+                    **config,
+                    "valor": (
+                        fecha.strftime("%d/%m/%Y")
+                        if activa
+                        else "Sin fecha"
+                    ),
                     "activa": activa
                 }
             )
 
+    indicadores["etapas"] = etapas
 
-# --------------------------------------------------
-# SEGMENTOS DE LA LÍNEA
-# --------------------------------------------------
+    # ---------- Profesionalización ----------
 
-segmentos_activos = []
-
-for i in range(4):
-
-    etapa_actual = etapas_timeline[i]
-    etapa_siguiente = etapas_timeline[i + 1]
-
-    if entidad_seleccionada == "México":
-
-        # En México se colorea el tramo si la etapa siguiente
-        # tiene al menos una entidad con información.
-        segmento_activo = etapa_siguiente["conteo"] > 0
-
+    if base.empty:
+        indicadores["capacitadas"] = None
+        indicadores["paa"] = pd.DataFrame()
     else:
-
-        # En estados, el tramo se colorea solamente si
-        # ambas etapas tienen fecha.
-        segmento_activo = (
-            etapa_actual["activa"]
-            and etapa_siguiente["activa"]
-        )
-
-    segmentos_activos.append(segmento_activo)
-
-
-# --------------------------------------------------
-# CONSTRUCCIÓN DEL HTML
-# --------------------------------------------------
-
-html_timeline = """
-<style>
-
-.timeline-wrapper {
-    width: 100%;
-    margin-top: 30px;
-    margin-bottom: 35px;
-}
-
-.timeline-row {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    position: relative;
-    align-items: start;
-}
-
-.timeline-item {
-    text-align: center;
-    position: relative;
-    z-index: 2;
-    padding: 0 12px;
-}
-
-.timeline-circle {
-    width: 78px;
-    height: 78px;
-
-    margin: 0 auto 18px auto;
-
-    border-radius: 50%;
-
-    display: flex;
-    justify-content: center;
-    align-items: center;
-
-    font-size: 30px;
-    font-weight: 700;
-
-    border: 3px solid;
-    background-color: white;
-
-    position: relative;
-    z-index: 3;
-}
-
-.timeline-circle.active {
-    border-color: #6F3FA0;
-    color: #6F3FA0;
-}
-
-.timeline-circle.inactive {
-    border-color: #D0D0D0;
-    color: #B5B5B5;
-    background-color: #F5F5F5;
-}
-
-.timeline-title {
-    font-size: 16px;
-    font-weight: 700;
-    line-height: 1.25;
-    min-height: 50px;
-    margin-bottom: 12px;
-}
-
-.timeline-value {
-    display: inline-block;
-
-    font-size: 14px;
-    font-weight: 600;
-
-    padding: 6px 12px;
-    border-radius: 8px;
-
-    margin-bottom: 14px;
-
-    white-space: nowrap;
-}
-
-.timeline-value.active {
-    color: #6F3FA0;
-    border: 1px solid #6F3FA0;
-    background-color: #F8F4FB;
-}
-
-.timeline-value.inactive {
-    color: #8F8F8F;
-    border: 1px solid #D0D0D0;
-    background-color: #F3F3F3;
-}
-
-.timeline-description {
-    font-size: 13px;
-    line-height: 1.4;
-    color: #555555;
-}
-
-.timeline-item.inactive .timeline-title,
-.timeline-item.inactive .timeline-description {
-    color: #9A9A9A;
-}
-
-
-/* -----------------------------------------------
-   CONECTORES
------------------------------------------------- */
-
-.timeline-connector {
-    position: absolute;
-
-    top: 38px;
-
-    height: 4px;
-
-    z-index: 1;
-}
-
-.connector-1 {
-    left: 10%;
-    width: 20%;
-}
-
-.connector-2 {
-    left: 30%;
-    width: 20%;
-}
-
-.connector-3 {
-    left: 50%;
-    width: 20%;
-}
-
-.connector-4 {
-    left: 70%;
-    width: 20%;
-}
-
-.connector-active {
-    background-color: #6F3FA0;
-}
-
-.connector-inactive {
-    background-color: #D8D8D8;
-}
-
-</style>
-
-
-<div class="timeline-wrapper">
-
-    <div class="timeline-row">
-"""
-
-
-# --------------------------------------------------
-# CONECTORES
-# --------------------------------------------------
-
-for i, activo in enumerate(segmentos_activos, start=1):
-
-    clase_conector = (
-        "connector-active"
-        if activo
-        else "connector-inactive"
-    )
-
-    html_timeline += f"""
-        <div
-            class="timeline-connector connector-{i} {clase_conector}">
-        </div>
-    """
-
-
-# --------------------------------------------------
-# ETAPAS
-# --------------------------------------------------
-
-for etapa in etapas_timeline:
-
-    clase_estado = (
-        "active"
-        if etapa["activa"]
-        else "inactive"
-    )
-
-    html_timeline += f"""
-        <div class="timeline-item {clase_estado}">
-
-            <div class="timeline-circle {clase_estado}">
-                {etapa["icono"]}
-            </div>
-
-            <div class="timeline-title">
-                {etapa["nombre"]}
-            </div>
-
-            <div class="timeline-value {clase_estado}">
-                {etapa["valor"]}
-            </div>
-
-            <div class="timeline-description">
-                {etapa["descripcion"]}
-            </div>
-
-        </div>
-    """
-
-
-html_timeline += """
-    </div>
-</div>
-"""
-
-
-st.html(html_timeline)
-
-# PROFESIONALIZACION #
-
-st. markdown("## Profesionalización")
-
-# Etiquetas de las variables PAA
-etiquetas_paa = {
-    "paa_judicatura": "Consejo de la Judicatura",
-    "paa_contraloria": "Secretaría Anticorrupción y Buen Gobierno / Función Pública",
-    "paa_cpc": "Comité de Participación Ciudadana",
-    "paa_fecc": "Fiscalía Especializada Contra la Corrupción",
-    "paa_osf": "Auditoría Superior",
-    "paa_sesea": "Secretaría Ejecutiva del Sistema Estatal Anticorrupción",
-    "paa_sesna": "Secretaría Ejecutiva del Sistema Nacional Anticorrupción",
-    "paa_tdf": "Coordinación de Vigilancia",
-    "paa_tja": "Tribunal de Justicia Administrativa"
-}
-
-columnas_paa = list(etiquetas_paa.keys())
-
-
-# --------------------------------------------------
-# DATOS SEGUN SELECCION
-# --------------------------------------------------
-
-if entidad_seleccionada == "México":
-
-    datos_prof = datos_periodo[
-        datos_periodo["tiene_informacion"] == 1
-    ].copy()
-
-    # Total nacional de personas servidoras públicas capacitadas
-    cap_serv_pub = int(
-        datos_prof["cap_serv_pub"]
-        .fillna(0)
-        .sum()
-    )
-
-    # Totales nacionales PAA
-    valores_paa = {}
-
-    for columna in columnas_paa:
-        valores_paa[columna] = int(
-            datos_prof[columna]
+        indicadores["capacitadas"] = int(
+            pd.to_numeric(base["cap_serv_pub"], errors="coerce")
             .fillna(0)
             .sum()
         )
 
-else:
+        filas_paa = []
 
-    fila_prof = datos_periodo[
-        datos_periodo["nom_ent"] == entidad_seleccionada
-    ]
+        for columna, (corta, larga) in ETIQUETAS_PAA.items():
 
-    if not fila_prof.empty:
-
-        fila_prof = fila_prof.iloc[0]
-
-        cap_serv_pub = int(
-            pd.to_numeric(
-                fila_prof["cap_serv_pub"],
-                errors="coerce"
+            valor = int(
+                pd.to_numeric(base[columna], errors="coerce")
+                .fillna(0)
+                .sum()
             )
-            if pd.notna(fila_prof["cap_serv_pub"])
-            else 0
+
+            if valor > 0:
+                filas_paa.append(
+                    {
+                        "institucion": corta,
+                        "institucion_completa": larga,
+                        "personas": valor
+                    }
+                )
+
+        df_paa = pd.DataFrame(filas_paa)
+
+        # Para que la gráfica sea legible se muestran las
+        # instituciones con más personas capacitadas y el
+        # resto se agrupa.
+        if len(df_paa) > 7:
+
+            df_paa = df_paa.sort_values("personas", ascending=False)
+
+            principales = df_paa.head(6)
+            restantes = df_paa.tail(len(df_paa) - 6)
+
+            df_paa = pd.concat([
+                principales,
+                pd.DataFrame([{
+                    "institucion": f"Otras {len(restantes)} instituciones",
+                    "institucion_completa": " · ".join(
+                        restantes["institucion_completa"]
+                    ),
+                    "personas": int(restantes["personas"].sum())
+                }])
+            ])
+
+        indicadores["paa"] = df_paa
+
+    return indicadores
+
+
+indicadores = calcular_indicadores(
+    datos_periodo,
+    entidad_seleccionada
+)
+
+
+# --------------------------------------------------
+# 10. DISTRIBUCION DE LA PANTALLA
+# --------------------------------------------------
+
+col_izquierda, col_derecha = st.columns([1, 1.28], gap="medium")
+
+
+# --------------------------------------------------
+# 11. GRADO DE CONSOLIDACION Y MAPA
+# --------------------------------------------------
+
+with col_izquierda:
+
+    with st.container(key="tarjeta_mapa"):
+
+        st.html('<div class="titulo-seccion">Grado de consolidación</div>')
+
+        if es_nacional:
+            nota_mapa = (
+                f"Promedio de {indicadores['entidades']} entidades "
+                "con información. Haz clic en un estado para filtrar."
+            )
+        else:
+            nota_mapa = "Haz clic en el mapa para cambiar de entidad."
+
+        st.html(f'<div class="nota-seccion">{nota_mapa}</div>')
+
+        # Aviso cuando la entidad no reporta información
+        if not indicadores["hay_informacion"]:
+
+            st.html(
+                f"""
+                <div class="aviso-sin-informacion">
+                    {entidad_seleccionada} no cuenta con información
+                    disponible para el
+                    {texto_trimestre(trimestre).lower()} de {anio}.
+                </div>
+                """
+            )
+
+        # ---------- Resumen del grado ----------
+
+        filas_componentes = ""
+
+        for componente in indicadores["componentes"]:
+
+            puntos = componente["puntos"]
+            maximo = componente["maximo"]
+
+            if puntos is None or pd.isna(puntos):
+                ancho = 0
+            else:
+                ancho = max(0, min(100, puntos / maximo * 100))
+
+            filas_componentes += f"""
+                <div class="cons-fila"
+                     title="Aporta hasta {maximo:g} de los 100 puntos
+                            del grado de consolidación">
+                    <div>{componente['nombre']}</div>
+                    <div class="cons-pista">
+                        <span class="cons-relleno"
+                              style="width: {ancho:.1f}%"></span>
+                    </div>
+                    <div class="cons-porcentaje">
+                        {formato(puntos, 1)}
+                        <span>/ {maximo:g}</span>
+                    </div>
+                </div>
+            """
+
+        st.html(
+            f"""
+            <div class="cons-encabezado">
+                <div>
+                    <div class="cons-entidad">{entidad_seleccionada}</div>
+                    <div class="cons-valor">
+                        {formato(indicadores["grado_total"], 1)}
+                        <span>/ 100</span>
+                    </div>
+                </div>
+                <div class="cons-componentes">
+                    {filas_componentes}
+                </div>
+            </div>
+            """
         )
 
-        valores_paa = {}
+        if not es_nacional:
 
-        for columna in columnas_paa:
+            if st.button(
+                "← Regresar a la vista nacional",
+                key="boton_nacional"
+            ):
+                st.session_state["entidad_activa"] = NACIONAL
+                st.rerun()
 
-            valor = fila_prof[columna]
+        # ---------- Preparación del mapa ----------
 
-            if pd.isna(valor):
-                valor = 0
+        mapa_datos = datos_periodo[
+            ["nom_ent", "grado_cons_total", "tiene_informacion"]
+        ].copy()
 
-            valores_paa[columna] = int(valor)
+        # El GeoJSON nombra "México" al Estado de México
+        equivalencias_mapa = {"Estado de México": "México"}
 
-    else:
-
-        cap_serv_pub = 0
-
-        valores_paa = {
-            columna: 0
-            for columna in columnas_paa
-        }
-
-
-# --------------------------------------------------
-# VISUAL 1 - PERSONAS CAPACITADAS POR LA SESEA
-# --------------------------------------------------
-
-st.markdown("### Personas Servidoras Públicas capacitadas por la SESEA")
-
-if cap_serv_pub > 0:
-
-
-    st.html(
-        f"""
-        <div style="
-            width: 100%;
-            text-align: left;
-            padding: 20px 0px 30px 0px;
-        ">
-            <div style="
-                font-size: 72px;
-                font-weight: 700;
-                color: #0F4C81;
-                line-height: 1;
-            ">
-                {cap_serv_pub:,}
-            </div>
-        </div>
-        """
-    )
-
-else:
-
-    st.html(
-        """
-        <div style="
-            width: 100%;
-            text-align: left;
-            padding: 25px 0px 35px 0px;
-        ">
-            <div style="
-                font-size: 28px;
-                font-weight: 600;
-                color: #8A8A8A;
-            ">
-                Sin información
-            </div>
-        </div>
-        """
-    )
-
-
-# --------------------------------------------------
-# VISUAL 2 - PLATAFORMA DE APRENDIZAJE ANTICORRUPCION
-# --------------------------------------------------
-
-st.markdown("### Plataforma de Aprendizaje Anticorrupción")
-
-df_paa = pd.DataFrame([
-    {
-        "Institución": etiquetas_paa[columna],
-        "Personas": valor
-    }
-    for columna, valor in valores_paa.items()
-    if valor > 0
-])
-
-if not df_paa.empty:
-
-    df_paa = (
-        df_paa
-        .sort_values(
-            by="Personas",
-            ascending=True
+        mapa_datos["nombre_mapa"] = (
+            mapa_datos["nom_ent"].replace(equivalencias_mapa)
         )
-        .reset_index(drop=True)
+
+        mapa_datos["estado_informacion"] = mapa_datos.apply(
+            lambda fila:
+                "Sin información disponible"
+                if fila["tiene_informacion"] == 0
+                else f'{fila["grado_cons_total"]:.1f} / 100',
+            axis=1
+        )
+
+        mapa_con_info = mapa_datos[
+            mapa_datos["tiene_informacion"] == 1
+        ]
+
+        mapa_sin_info = mapa_datos[
+            mapa_datos["tiene_informacion"] == 0
+        ]
+
+        fig_mapa = px.choropleth(
+            mapa_con_info,
+            geojson=geojson_mexico,
+            locations="nombre_mapa",
+            featureidkey="properties.name",
+            color="grado_cons_total",
+            hover_name="nom_ent",
+            hover_data={
+                "nombre_mapa": False,
+                "grado_cons_total": False,
+                "tiene_informacion": False,
+                "estado_informacion": True
+            },
+            range_color=(0, 100),
+            labels={
+                "estado_informacion": "Grado de consolidación"
+            },
+            color_continuous_scale=ESCALA_MAPA,
+            projection="mercator"
+        )
+
+        fig_sin_info = px.choropleth(
+            mapa_sin_info,
+            geojson=geojson_mexico,
+            locations="nombre_mapa",
+            featureidkey="properties.name",
+            hover_name="nom_ent",
+            hover_data={
+                "nombre_mapa": False,
+                "grado_cons_total": False,
+                "tiene_informacion": False,
+                "estado_informacion": True
+            },
+            color_discrete_sequence=["#D9D9D9"],
+            projection="mercator"
+        )
+
+        for trace in fig_sin_info.data:
+            fig_mapa.add_trace(trace)
+
+        fig_mapa.update_traces(
+            marker_line_color="#ffffff",
+            marker_line_width=0.6,
+            selector=dict(type="choropleth")
+        )
+
+        # Resaltar la entidad seleccionada
+        if not es_nacional:
+
+            nombre_mapa_activo = equivalencias_mapa.get(
+                entidad_seleccionada,
+                entidad_seleccionada
+            )
+
+            fig_mapa.add_trace(
+                go.Choropleth(
+                    geojson=geojson_mexico,
+                    locations=[nombre_mapa_activo],
+                    featureidkey="properties.name",
+                    z=[1],
+                    colorscale=[
+                        [0, "rgba(0,0,0,0)"],
+                        [1, "rgba(0,0,0,0)"]
+                    ],
+                    showscale=False,
+                    marker_line_color=TINTA,
+                    marker_line_width=2.5,
+                    hoverinfo="skip"
+                )
+            )
+
+        # Encuadre fijo del país: aprovecha mejor el espacio
+        # de la tarjeta que el ajuste automático de Plotly.
+        fig_mapa.update_geos(
+            visible=False,
+            bgcolor="rgba(0,0,0,0)",
+            lonaxis_range=[-119.0, -85.8],
+            lataxis_range=[14.1, 33.4]
+        )
+
+        fig_mapa.update_layout(
+            coloraxis_showscale=False,
+            showlegend=False,
+            margin=dict(l=0, r=0, t=0, b=0),
+            autosize=True,
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            dragmode=False,
+            hoverlabel=dict(
+                bgcolor="#ffffff",
+                bordercolor=VINO,
+                font=dict(color=TINTA, size=12)
+            )
+        )
+
+        # La clave incluye la entidad activa para que la selección
+        # previa del mapa no vuelva a aplicarse cuando el cambio
+        # se hace desde el selector.
+        evento_mapa = st.plotly_chart(
+            fig_mapa,
+            width="stretch",
+            key=f"mapa_{entidad_seleccionada}",
+            on_select="rerun",
+            selection_mode="points",
+            config={
+                "displayModeBar": False,
+                "scrollZoom": False,
+                "responsive": True
+            }
+        )
+
+        st.html(
+            """
+            <div class="leyenda-mapa">
+                <span>Bajo 0</span>
+                <span class="leyenda-barra"></span>
+                <span>100 Alto</span>
+                <span style="margin-left:12px">
+                    <span class="leyenda-sin-dato"></span>Sin información
+                </span>
+            </div>
+            """
+        )
+
+        # ---------- Contexto del grado de consolidación ----------
+
+        ranking = (
+            datos_periodo[datos_periodo["tiene_informacion"] == 1]
+            .sort_values("grado_cons_total", ascending=False)
+            .reset_index(drop=True)
+        )
+
+        if not ranking.empty:
+
+            promedio_nacional = ranking["grado_cons_total"].mean()
+
+            if es_nacional:
+
+                mayores = " · ".join(
+                    f"{fila.nom_ent} <b>{fila.grado_cons_total:.1f}</b>"
+                    for fila in ranking.head(3).itertuples()
+                )
+
+                menores = " · ".join(
+                    f"{fila.nom_ent} <b>{fila.grado_cons_total:.1f}</b>"
+                    for fila in ranking.tail(3)[::-1].itertuples()
+                )
+
+                st.html(
+                    f"""
+                    <div class="resumen-mapa">
+                        <div>
+                            <span class="resumen-etiqueta">Mayor grado</span>
+                            {mayores}
+                        </div>
+                        <div>
+                            <span class="resumen-etiqueta">Menor grado</span>
+                            {menores}
+                        </div>
+                    </div>
+                    """
+                )
+
+            else:
+
+                posiciones = ranking.index[
+                    ranking["nom_ent"] == entidad_seleccionada
+                ]
+
+                if len(posiciones) and indicadores["grado_total"] is not None:
+
+                    posicion = (
+                        f"<b>{int(posiciones[0]) + 1} de {len(ranking)}</b> "
+                        "entidades"
+                    )
+
+                    diferencia = (
+                        indicadores["grado_total"] - promedio_nacional
+                    )
+
+                    comparacion = (
+                        f"<b>{diferencia:+.1f}</b> puntos"
+                    )
+
+                else:
+                    posicion = "Sin información"
+                    comparacion = "Sin información"
+
+                st.html(
+                    f"""
+                    <div class="resumen-mapa">
+                        <div>
+                            <span class="resumen-etiqueta">
+                                Posición nacional
+                            </span>
+                            {posicion}
+                        </div>
+                        <div>
+                            <span class="resumen-etiqueta">
+                                Respecto del promedio nacional
+                                ({promedio_nacional:.1f})
+                            </span>
+                            {comparacion}
+                        </div>
+                    </div>
+                    """
+                )
+
+        # ---------- Clic sobre el mapa ----------
+
+        if evento_mapa.selection.points:
+
+            punto = evento_mapa.selection.points[0]
+
+            if "location" in punto:
+
+                equivalencias_inversas = {"México": "Estado de México"}
+
+                entidad_clic = equivalencias_inversas.get(
+                    punto["location"],
+                    punto["location"]
+                )
+
+                if entidad_clic != st.session_state["entidad_activa"]:
+
+                    st.session_state["entidad_activa"] = entidad_clic
+                    st.rerun()
+
+
+# --------------------------------------------------
+# 12. DESIGNACIONES VIGENTES
+# --------------------------------------------------
+
+with col_derecha:
+
+    with st.container(key="tarjeta_designaciones"):
+
+        st.html('<div class="titulo-seccion">Designaciones vigentes</div>')
+
+        st.html(
+            '<div class="nota-seccion">'
+            'Integrantes designados respecto de las posiciones '
+            'que corresponden.</div>'
+        )
+
+        tarjetas_html = ""
+
+        hay_informacion = indicadores["hay_informacion"]
+
+        for item in indicadores["designaciones"]:
+
+            valor_tarjeta = (
+                item["vigentes"] if hay_informacion else "s/d"
+            )
+
+            meta_tarjeta = (
+                f"de {item['total']}"
+                if hay_informacion
+                else "Sin información"
+            )
+
+            tarjetas_html += f"""
+                <div class="des-tarjeta"
+                     style="--color: {item['color']};
+                            --tinte: {aclarar(item['color'], 0.20)};
+                            --borde: {aclarar(item['color'], 0.28)}"
+                     title="{item['titulo']}">
+                    <div class="des-icono">
+                        {icono(item["icono"], "#ffffff", 20)}
+                    </div>
+                    <div class="des-titulo">{item['titulo']}</div>
+                    <div class="des-valor">{valor_tarjeta}</div>
+                    <div class="des-meta">{meta_tarjeta}</div>
+                </div>
+            """
+
+        if hay_informacion:
+            resumen_designaciones = (
+                "<span>Total de designaciones vigentes</span>"
+                f"<b>{indicadores['designaciones_vigentes']}</b>"
+                f"<span>de {indicadores['designaciones_total']}</span>"
+            )
+        else:
+            resumen_designaciones = (
+                "<span>Sin información disponible "
+                "para el periodo seleccionado</span>"
+            )
+
+        st.html(
+            f"""
+            <div class="grid-designaciones">{tarjetas_html}</div>
+
+            <div class="des-resumen">{resumen_designaciones}</div>
+            """
+        )
+
+    # ----------------------------------------------
+    # 13. AVANCES DE LA IMPLEMENTACION
+    # ----------------------------------------------
+
+    with st.container(key="tarjeta_avances"):
+
+        st.html(
+            '<div class="titulo-seccion">'
+            'Avances de la implementación</div>'
+        )
+
+        if es_nacional:
+            nota_avances = (
+                "Entidades que han concluido cada etapa "
+                "de la política estatal."
+            )
+        else:
+            nota_avances = (
+                "Fechas registradas para cada etapa "
+                "de la política estatal."
+            )
+
+        st.html(f'<div class="nota-seccion">{nota_avances}</div>')
+
+        # Longitud del avance sobre la línea
+        etapas_activas = [
+            posicion
+            for posicion, etapa in enumerate(indicadores["etapas"])
+            if etapa["activa"]
+        ]
+
+        ultima_activa = max(etapas_activas) if etapas_activas else 0
+
+        ancho_progreso = ultima_activa * 20
+
+        etapas_html = ""
+
+        for etapa in indicadores["etapas"]:
+
+            clase = "" if etapa["activa"] else " inactiva"
+
+            etapas_html += f"""
+                <div class="avance-etapa{clase}">
+                    <div class="avance-circulo">
+                        {icono(
+                            etapa["icono"],
+                            VINO if etapa["activa"] else "#c3bdbf",
+                            24
+                        )}
+                    </div>
+                    <div class="avance-nombre">{etapa['nombre']}</div>
+                    <div class="avance-valor">{etapa['valor']}</div>
+                </div>
+            """
+
+        st.html(
+            f"""
+            <div class="avances-fila">
+                <div class="avances-linea"></div>
+                <div class="avances-progreso"
+                     style="width: {ancho_progreso}%"></div>
+                {etapas_html}
+            </div>
+            """
+        )
+
+    # ----------------------------------------------
+    # 14. PDN Y PROFESIONALIZACION (ultima fila)
+    # ----------------------------------------------
+
+    col_pdn, col_profesionalizacion = st.columns(
+        [1.15, 1],
+        gap="small"
     )
 
-    fig_paa = px.bar(
-        df_paa,
-        x="Personas",
-        y="Institución",
-        orientation="h",
-        text="Personas"
-    )
+    with col_pdn, st.container(key="tarjeta_pdn"):
 
-    fig_paa.update_traces(
-        texttemplate="%{text:,.0f}",
-        textposition="outside",
-        cliponaxis=False
-    )
+        st.html(
+            '<div class="titulo-seccion">'
+            'Entes interconectados a la PDN</div>'
+        )
 
-    fig_paa.update_layout(
-        height=max(
-            320,
-            len(df_paa) * 55
-        ),
-        margin=dict(
-            l=20,
-            r=80,
-            t=10,
-            b=20
-        ),
-        xaxis_title="Personas capacitadas",
-        yaxis_title=None,
-        showlegend=False
-    )
+        st.html(
+            '<div class="nota-seccion">'
+            'Entes públicos que reportan información en cada sistema '
+            'de la Plataforma Digital Nacional.</div>'
+        )
 
-    fig_paa.update_xaxes(
-        rangemode="tozero",
-        tickformat=","
-    )
+        sistemas_html = ""
 
-    st.plotly_chart(
-        fig_paa,
-        use_container_width=True,
-        config={
-            "displayModeBar": False
-        }
-    )
+        for sistema in indicadores["sistemas"]:
 
-else:
+            porcentaje = (
+                max(0, min(100, sistema["porcentaje"]))
+                if indicadores["hay_informacion"]
+                else 0
+            )
 
-    st.info("Sin información")
+            if indicadores["hay_informacion"]:
+                valor_sistema = (
+                    f"{sistema['entes']} "
+                    f"<span>de {sistema['total']}</span>"
+                )
+                porcentaje_sistema = formato(
+                    sistema["porcentaje"], 1, "%"
+                )
+            else:
+                valor_sistema = "<span>Sin información</span>"
+                porcentaje_sistema = ""
+
+            sistemas_html += f"""
+                <div class="pdn-sistema" title="{sistema['descripcion']}">
+                    <div class="pdn-anillo"
+                         style="--pct: {porcentaje:.1f}">
+                        <div class="pdn-anillo-centro">
+                            {sistema['titulo']}
+                        </div>
+                    </div>
+                    <div class="pdn-valor">{valor_sistema}</div>
+                    <div class="pdn-porcentaje">
+                        {porcentaje_sistema}
+                    </div>
+                    <div class="pdn-descripcion">
+                        {sistema['descripcion']}
+                    </div>
+                </div>
+            """
+
+        st.html(
+            f"""
+            <div class="pdn-contenido">
+
+                <div class="grid-pdn">{sistemas_html}</div>
+
+                <div class="pdn-separador"></div>
+
+                <div class="pdn-total">
+                    {icono("red", VINO, 32)}
+                    <div class="pdn-total-titulo">
+                        Total de interconexiones
+                    </div>
+                    <div class="pdn-total-valor">
+                        {
+                            f'{indicadores["pdn_entes"]:,}'
+                            if indicadores["hay_informacion"]
+                            else "s/d"
+                        }
+                        <span>
+                            {
+                                f'de {indicadores["pdn_total"]:,}'
+                                if indicadores["hay_informacion"]
+                                else ""
+                            }
+                        </span>
+                    </div>
+                    <div class="pdn-porcentaje">
+                        {
+                            formato(indicadores["pdn_porcentaje"], 1, "%")
+                            if indicadores["hay_informacion"]
+                            else ""
+                        }
+                    </div>
+                </div>
+
+            </div>
+            """
+        )
+
+
+    # ----------------------------------------------
+    # 15. PROFESIONALIZACION
+    # ----------------------------------------------
+
+    with col_profesionalizacion, st.container(
+        key="tarjeta_profesionalizacion"
+    ):
+
+        st.html(
+            f"""
+            <div class="titulo-seccion">Profesionalización</div>
+
+            <div class="prof-encabezado">
+                <div class="prof-icono">{icono("finanzas", VINO, 26)}</div>
+                <div class="prof-numero">
+                    {formato(indicadores["capacitadas"])}
+                </div>
+                <div class="prof-texto">
+                    Personas servidoras públicas<br>
+                    capacitadas por las SESEA
+                </div>
+            </div>
+
+            <div class="nota-seccion">
+                Plataforma de Aprendizaje Anticorrupción ·
+                personas capacitadas por institución
+            </div>
+            """
+        )
+
+        df_paa = indicadores["paa"]
+
+        if not df_paa.empty:
+
+            df_paa = df_paa.sort_values(
+                "personas",
+                ascending=True
+            )
+
+            fig_paa = px.bar(
+                df_paa,
+                x="personas",
+                y="institucion",
+                orientation="h",
+                text="personas",
+                custom_data=["institucion_completa"]
+            )
+
+            fig_paa.update_traces(
+                marker_color=VINO,
+                texttemplate="%{text:,.0f}",
+                textposition="outside",
+                textfont=dict(size=9.5, color=TINTA),
+                cliponaxis=False,
+                hovertemplate=(
+                    "<b>%{customdata[0]}</b><br>"
+                    "%{x:,.0f} personas<extra></extra>"
+                )
+            )
+
+            fig_paa.update_layout(
+                autosize=True,
+                margin=dict(l=0, r=46, t=0, b=0),
+                bargroupgap=0,
+                xaxis_title=None,
+                yaxis_title=None,
+                showlegend=False,
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(size=9.5, color=TINTA),
+                bargap=0.35
+            )
+
+            fig_paa.update_xaxes(
+                visible=False,
+                rangemode="tozero"
+            )
+
+            fig_paa.update_yaxes(
+                showgrid=False,
+                ticksuffix=" "
+            )
+
+            st.plotly_chart(
+                fig_paa,
+                width="stretch",
+                config={
+                    "displayModeBar": False,
+                    "responsive": True
+                }
+            )
+
+        else:
+
+            st.html(
+                '<div class="sin-dato">Sin registros de la Plataforma '
+                'de Aprendizaje Anticorrupción en el periodo.</div>'
+            )

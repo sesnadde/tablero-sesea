@@ -34,3 +34,39 @@ app.py (Ejecuta el dashboard)
 requirements.txt
 .gitignore
 assets/ json estatal/nacional
+assets/icons/ iconos institucionales del tablero
+
+# Cómo ejecutar el dashboard #
+
+1. Instalar dependencias:
+
+   pip install -r requirements.txt
+
+2. Crear el archivo .env con las credenciales:
+
+   SUPABASE_URL=...
+   SUPABASE_SECRET_KEY=...
+
+3. Ejecutar:
+
+   python -m streamlit run app.py
+
+El tablero queda disponible en http://localhost:8501
+
+# Diseño #
+
+El tablero está diseñado para verse completo en una sola
+pantalla, sin necesidad de desplazarse. El mapa, la gráfica y
+las tarjetas se ajustan a la altura de la ventana; en pantallas
+de menor altura se omiten los textos descriptivos y los
+elementos se compactan de forma automática.
+
+# Navegación #
+
+- El periodo se elige con los selectores de Año y Trimestre.
+- La entidad se puede cambiar desde el selector o dando clic
+  sobre el mapa; el botón "Regresar a la vista nacional"
+  devuelve la vista agregada.
+- La entidad seleccionada queda registrada en la dirección
+  (por ejemplo ?entidad=Jalisco), por lo que la vista puede
+  compartirse mediante el enlace.
