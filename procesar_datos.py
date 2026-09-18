@@ -75,11 +75,38 @@ renombrar_columnas = {
     "FECHA_APROBACION_PIPEA": "FECHA_APROBACION_PIPEA",
     "FECHA_EJECUCIÓN_PIPEA": "FECHA_EJECUCION_PIPEA",
     "FECHA_APROBACION_SYE": "FECHA_APROBACION_SYE",
-    "FECHA_EVALUACION": "FECHA_EVALUACION"
+    "FECHA_EVALUACION": "FECHA_EVALUACION",
+
+    "LINK_PEA": "LINK_PEA",
+    "LINK_PIPEA": "LINK_PIPEA",
+    "LINK_SISE": "LINK_SISE",
+
+    "TEXT_APROB_PEA": "TEXT_APROB_PEA",
+    "TEXT_APROB_PIPEA": "TEXT_APROB_PIPEA",
+    "TEXT_EJEC_PIPEA": "TEXT_EJEC_PIPEA",
+    "TEXT_METODOLOGIA_SISE": "TEXT_METODOLOGIA_SISE",
+    "TEXT_EVALUA_POLITICA": "TEXT_EVALUA_POLITICA"
 
 }
 
 df = df.rename(columns=renombrar_columnas)
+
+# VARIABLES DE LINKS Y TEXTOS DE IMPLEMENTACIÓN #
+
+columnas_links_textos = [
+    "LINK_PEA",
+    "LINK_PIPEA",
+    "LINK_SISE",
+    "TEXT_APROB_PEA",
+    "TEXT_APROB_PIPEA",
+    "TEXT_EJEC_PIPEA",
+    "TEXT_METODOLOGIA_SISE",
+    "TEXT_EVALUA_POLITICA"
+]
+
+for columna in columnas_links_textos:
+    if columna in df.columns:
+        df[columna] = df[columna].astype("string")
 
 # VARIABLES DE PROFESIONALIZACIÓN #
 
@@ -140,13 +167,24 @@ columnas_sin_dato = [
     "CUMPLIMIENTO_S1",
     "CUMPLIMIENTO_S2",
     "CUMPLIMIENTO_S3",
-    "CUMPLIMIENTO_S6"
+    "CUMPLIMIENTO_S6",
+
+    "LINK_PEA",
+    "LINK_PIPEA",
+    "LINK_SISE",
+    "TEXT_APROB_PEA",
+    "TEXT_APROB_PIPEA",
+    "TEXT_EJEC_PIPEA",
+    "TEXT_METODOLOGIA_SISE",
+    "TEXT_EVALUA_POLITICA"
 ]
 
 df.loc[
     df["NOM_ENT"].isin(entidades_sin_informacion),
     columnas_sin_dato
 ] = pd.NA
+
+
 
 # REVISION DESPUÉS DEL RENOMBRADO #
 
@@ -238,8 +276,18 @@ diccionario = pd.DataFrame([
     ["FECHA_EJECUCION_PIPEA", "Fecha de ejecucion del PI-PEA", "Implementacion", "date", "Si", ""],
     ["FECHA_APROBACION_SYE", "Fecha de aprobacion del mecanismo de seguimiento y evaluacion", "Implementacion", "date", "Si", ""],
     ["FECHA_EVALUACION", "Fecha de evaluacion correspondiente", "Implementacion", "date", "Si", ""],
-    ["TIENE_INFORMACION", "Indica si la entidad cuenta con informacion disponible para el dashboard", "Control", "integer", "No", "1 = informacion disponible; 0 = sin informacion disponible"]
+    ["TIENE_INFORMACION", "Indica si la entidad cuenta con informacion disponible para el dashboard", "Control", "integer", "No", "1 = informacion disponible; 0 = sin informacion disponible"],
+
+    ["LINK_PEA", "Liga al documento formal de aprobación de la PEA", "Implementacion", "text", "Si", "URL del documento; no aplica para entidades sin informacion"],
+    ["LINK_PIPEA", "Liga al documento formal de aprobación del PI-PEA", "Implementacion", "text", "Si", "URL del documento; no aplica para entidades sin informacion"],
+    ["LINK_SISE", "Liga al documento formal de la metodología de seguimiento y evaluacion", "Implementacion", "text", "Si", "URL del documento; no aplica para entidades sin informacion"],
+    ["TEXT_APROB_PEA", "Texto descriptivo de la etapa de aprobación de la PEA", "Implementacion", "text", "Si", "Contenido desplegable del visual de Avances de la Implementación"],
+    ["TEXT_APROB_PIPEA", "Texto descriptivo de la etapa de aprobación del PI-PEA", "text", "Si", "Contenido desplegable del visual de Avances de la Implementación"],
+    ["TEXT_EJEC_PIPEA", "Texto descriptivo de la etapa de ejecución deL PI-PEA", "text", "Si", "Contenido desplegable del visual de Avances de la Implementación"],
+    ["TEXT_METODOLOGIA_SISE", "Texto descriptivo de la metodología de seguimiento y evaluacion", "Implementacion", "text", "Si", "Contenido desplegable del visual de Avances de la Implementación"],
+    ["TEXT_EVALUA_POLITICA", "Texto descriptivo de la etapa de aprobación de la PEA", "Implementacion", "text", "Si", "Contenido desplegable del visual de Avances de la Implementación"]
 ],
+
 columns=[
     "VARIABLE",
     "DESCRIPCION",

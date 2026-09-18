@@ -1,0 +1,105 @@
+
+{
+  "Ciudad de México": {
+    "situacion_actual": "Parálisis Operativa e Institucional",
+    "situacion_institucional": "El Sistema Local Anticorrupción de la Ciudad de México se encuentra en una situación de parálisis operativa e institucional. En consecuencia, la entidad mantiene un rezago significativo respecto al resto de los SEA, tanto en su desarrollo institucional como en su articulación con el SNA.",
+    "hechos_relevantes": [
+      "El antecedente más relevante se ubica en el proceso legislativo de 2017, mediante el cual se expidieron la Ley del Sistema Anticorrupción de la Ciudad de México y la Ley Orgánica de la Fiscalía Especializada en Combate a la Corrupción. Dicho proceso fue impugnado a través de la Acción de Inconstitucionalidad 121/2017 y sus acumuladas, lo que derivó en que, en enero de 2020, la Suprema Corte de Justicia de la Nación declarara la invalidez total de dichas leyes.",
+      "La Corte determinó que la Asamblea Legislativa no respetó los plazos mínimos para la convocatoria a las sesiones ni para la distribución de los dictámenes entre los legisladores, lo que impidió que las minorías parlamentarias conocieran y discutieran de manera efectiva las iniciativas. Este fallo obligó al Congreso de la Ciudad de México a reponer todo el proceso legislativo, lo que anuló los primeros nombramientos de los Comités de Selección y de Participación Ciudadana que ya se habían realizado bajo ese marco jurídico.",
+      "El Congreso de la Ciudad de México repuso el proceso normativo y el 25 de febrero de 2020 fue publicada una nueva Ley del Sistema Anticorrupción de la Ciudad de México. Bajo este marco legal se integró una nueva Comisión de Selección y un Comité de Participación Ciudadana, además de que se realizó el nombramiento de un Secretario Técnico.",
+      "No obstante, estos nuevos nombramientos no lograron consolidar la operación de la Secretaría Ejecutiva ni iniciar los trabajos del sistema local, debido a que no contaron con los recursos presupuestarios necesarios para el inicio de sus operaciones. Esta situación presupuestaria derivó en la renuncia del Secretario Técnico en 2022 y, para febrero de 2023, en la dimisión de la totalidad de las personas integrantes del CPC, ante la imposibilidad de ejercer sus funciones. A ello se sumó la conclusión del periodo de la Comisión de Selección, en diciembre de ese mismo año, con lo cual el sistema quedó nuevamente en una situación de inoperatividad institucional."
+    ],
+    "linea_tiempo": [
+      {
+        "fecha": "2017",
+        "eventos": [
+          "Publicación de la Ley del Sistema Anticorrupción de la CDMX y la Ley Orgánica de la Fiscalía Especializada en Combate a la Corrupción.",
+          "Acción de Institucionalidad 121/2017 y sus acumuladas (122/2017, 123/2017 y 135/2017)."
+        ]
+      },
+      {
+        "fecha": "Enero 2020",
+        "eventos": [
+          "SCJN declara la invalidez total de dichas leyes."
+        ]
+      },
+      {
+        "fecha": "Febrero 2020",
+        "eventos": [
+          "Publicación de una nueva Ley del Sistema Anticorrupción de la Ciudad de México.",
+          "Integración de nueva Comisión de Selección y un Comité de Participación Ciudadana."
+        ]
+      },
+      {
+        "fecha": "2022",
+        "eventos": [
+          "Renuncia del secretario técnico."
+        ]
+      },
+      {
+        "fecha": "Febrero 2023",
+        "eventos": [
+          "Dimisión de la totalidad de las personas integrantes del Comité de Participación Ciudadana (CPC)."
+        ]
+      },
+      {
+        "fecha": "Diciembre 2023",
+        "eventos": [
+          "Conclusión del periodo de la Comisión de Selección (CS)."
+        ]
+      }
+    ]
+  },
+
+  "Oaxaca": {
+    "situacion_actual": "Reconfiguración normativa e institucional",
+    "situacion_institucional": "Oaxaca presenta una trayectoria reciente marcada por procesos de reconfiguración normativa e institucional que han incidido en la continuidad de los órganos vinculados al Sistema Estatal de Combate a la Corrupción.",
+    "hechos_relevantes": [
+      "En julio de 2023, cuando se reformó la estructura del órgano jurisdiccional administrativo local y se sustituyó el Tribunal de Justicia Administrativa del Estado de Oaxaca por el Tribunal de Justicia Administrativa y Combate a la Corrupción del Estado de Oaxaca. Los artículos transitorios dispusieron que el nuevo tribunal asumiría las funciones del órgano anterior, que dejarían de surtir efectos los nombramientos de las magistraturas en funciones y que las nuevas personas integrantes serían designadas por el Ejecutivo local, con ratificación del Congreso del Estado.",
+      "Dichos actos fueron impugnados mediante la Controversia Constitucional 396/2023; sin embargo, aunque la SCJN concedió parcialmente la suspensión para que las magistraturas continuaran en el cargo y no fueran sustituidas, posteriormente el tribunal actor se desistió, por lo que el expediente fue sobreseído y el acuerdo causó estado en noviembre de 2023. Posteriormente, el 30 de abril de 2024 se publicó el Decreto número 2278, mediante el cual se reformó el artículo 120 de la Constitución Política del Estado Libre y Soberano de Oaxaca. Los artículos transitorios de dicho decreto dispusieron la extinción del órgano ciudadano del Sistema Estatal de Combate a la Corrupción y de su Comisión de Selección, así como la abrogación del Decreto 602, por el que se había expedido la Ley Estatal de Combate a la Corrupción en 2017. Asimismo, se estableció que el Congreso local debía expedir una nueva ley en la materia dentro de los 30 días hábiles posteriores a la publicación del decreto.",
+      "No fue sino hasta el 21 de noviembre de 2025 que se presentó la iniciativa con proyecto de decreto por el que se expide la Ley del Sistema Estatal de Combate a la Corrupción de Oaxaca, la cual fue turnada a la Comisión Permanente de Vigilancia del Sistema Estatal de Combate a la Corrupción el 25 de noviembre de 2025 y aprobada por el Pleno del Congreso del Estado el 26 de noviembre de 2025, con 39 votos a favor y cero en contra. Sin embargo, la publicación en el periódico oficial aún está pendiente. Las reformas constitucionales y legales han sido el principal vector de cambio en Oaxaca, al modificar aspectos sustantivos de su diseño institucional."
+    ],
+    "linea_tiempo": [
+      {
+        "fecha": "Julio 2023",
+        "eventos": [
+          "Sustitución del Tribunal de Justicia Administrativa del Estado de Oaxaca por el Tribunal de Justicia Administrativa y Combate a la Corrupción del Estado de Oaxaca.",
+          "Controversia Constitucional 396/2023."
+        ]
+      },
+      {
+        "fecha": "Noviembre 2023",
+        "eventos": [
+          "El expediente fue sobreseído y el acuerdo causó estado."
+        ]
+      },
+      {
+        "fecha": "Abril 2024",
+        "eventos": [
+          "Decreto # 227. Reforma al artículo 120 de la Constitución Política del Estado Libre y Soberano de Oaxaca.",
+          "Extinción del Órgano Ciudadano del Sistema Estatal de Combate a la Corrupción y de su Comité de Selección (CS).",
+          "Abrogación del Decreto 602 que había expedido la Ley Estatal de Combate a la Corrupción en 2017.",
+          "Determinación de 30 días hábiles posteriores para la expedición de una nueva ley en la materia."
+        ]
+      },
+      {
+        "fecha": "21 de noviembre 2025",
+        "eventos": [
+          "Iniciativa con proyecto de decreto por el que se expide la Ley del Sistema Estatal de Combate a la Corrupción de Oaxaca."
+        ]
+      },
+      {
+        "fecha": "25 de noviembre de 2025",
+        "eventos": [
+          "Iniciativa turnada a la Comisión Permanente de Vigilancia del Sistema Estatal de Combate a la Corrupción."
+        ]
+      },
+      {
+        "fecha": "26 de noviembre de 2025",
+        "eventos": [
+          "Aprobación de iniciativa por el Pleno del Congreso del Estado con 39 votos a favor y cero en contra."
+        ]
+      }
+    ]
+  }
+}

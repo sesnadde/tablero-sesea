@@ -2,6 +2,8 @@ import os
 import re
 import json
 import base64
+import html
+
 
 import pandas as pd
 import streamlit as st
@@ -95,7 +97,8 @@ ARCHIVOS_ICONOS = {
     "play": "play_arrow_100dp_A31746_FILL0_wght400_GRAD0_opsz48.svg",
     "grafica": "graph_2_100dp_A31746_FILL0_wght400_GRAD0_opsz48.svg",
     "red": "network_node_100dp_A31746_FILL0_wght400_GRAD0_opsz48.svg",
-    "finanzas": "finance_100dp_A31746_FILL0_wght400_GRAD0_opsz48.svg"
+    "finanzas": "finance_100dp_A31746_FILL0_wght400_GRAD0_opsz48.svg",
+    "link": "link_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg"
 }
 
 
@@ -136,848 +139,23 @@ def icono(nombre, color="#ffffff", tamano=24):
 
 
 # --------------------------------------------------
-# 4. ESTILOS GENERALES
+# 4. CARGA DE ESTILOS
 # --------------------------------------------------
 
-st.html(
-    f"""
-    <style>
-
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&display=swap');
-
-    html, body, [class*="st-"] {{
-        font-family: 'Noto Sans', 'Segoe UI', system-ui, sans-serif;
-    }}
-
-    /* El tablero se dimensiona con la altura de la ventana
-       para que quepa completo en una sola pantalla. */
-    :root {{
-        --alto-mapa: 60vh;
-        --alto-grafica: 26vh;
-    }}
-
-    @media (max-height: 900px) {{
-        :root {{
-            --alto-mapa: 51vh;
-            --alto-grafica: 22vh;
-        }}
-    }}
-
-    /* Altura media: se omiten las descripciones */
-    @media (max-height: 860px) {{
-        :root {{
-            --alto-mapa: 49vh;
-            --alto-grafica: 20vh;
-        }}
-
-        .nota-seccion,
-        .pdn-descripcion {{
-            display: none;
-        }}
-
-        .titulo-seccion {{
-            font-size: 12px;
-            margin-bottom: 4px;
-        }}
-
-        .st-key-tarjeta_mapa,
-        .st-key-tarjeta_profesionalizacion,
-        .st-key-tarjeta_designaciones,
-        .st-key-tarjeta_avances,
-        .st-key-tarjeta_pdn {{
-            padding: 8px 14px 7px 14px;
-        }}
-    }}
-
-    /* Pantallas de poca altura: todo se compacta */
-    @media (max-height: 780px) {{
-        :root {{
-            --alto-mapa: 46vh;
-            --alto-grafica: 15vh;
-            --escala: 0.96;
-        }}
-
-        .block-container {{
-            padding: 0.35rem 0.9rem 0.2rem 0.9rem;
-        }}
-
-        .stMainBlockContainer div[data-testid="stVerticalBlock"] {{
-            gap: 0.4rem;
-        }}
-
-        .st-key-barra_superior {{
-            padding: 5px 18px 0 18px;
-        }}
-
-        .st-key-tarjeta_mapa,
-        .st-key-tarjeta_profesionalizacion,
-        .st-key-tarjeta_designaciones,
-        .st-key-tarjeta_avances,
-        .st-key-tarjeta_pdn {{
-            padding: 7px 12px 6px 12px;
-        }}
-
-        .des-tarjeta {{
-            min-height: 86px;
-            padding: 6px 6px 6px 8px;
-        }}
-
-        .des-icono {{
-            width: 22px;
-            height: 22px;
-            border-radius: 6px;
-        }}
-
-        .des-titulo {{
-            min-height: 28px;
-        }}
-
-        .des-valor {{
-            font-size: 21px;
-        }}
-
-        .avance-circulo {{
-            width: 36px;
-            height: 36px;
-        }}
-
-        .avances-linea,
-        .avances-progreso {{
-            top: 18px;
-        }}
-
-        .avance-nombre {{
-            min-height: 28px;
-        }}
-
-        .pdn-anillo {{
-            width: 44px;
-            height: 44px;
-        }}
-
-        .pdn-anillo-centro {{
-            width: 34px;
-            height: 34px;
-            font-size: 12px;
-        }}
-
-        .cons-valor {{
-            font-size: 32px;
-        }}
-
-        .prof-numero {{
-            font-size: 25px;
-        }}
-
-        .des-titulo,
-        .avance-nombre {{
-            font-size: 9px;
-        }}
-
-        .des-resumen {{
-            margin-top: 4px;
-            padding-top: 4px;
-        }}
-
-        .resumen-mapa {{
-            margin-top: 4px;
-            padding-top: 4px;
-        }}
-    }}
-
-    /* Pantallas muy bajas: mínima expresión */
-    @media (max-height: 690px) {{
-        :root {{
-            --alto-mapa: 42vh;
-            --alto-grafica: 13vh;
-        }}
-
-        .des-tarjeta {{
-            min-height: 76px;
-        }}
-
-        .des-valor {{
-            font-size: 18px;
-        }}
-
-        .des-titulo,
-        .avance-nombre {{
-            font-size: 8.5px;
-        }}
-
-        .avance-circulo {{
-            width: 30px;
-            height: 30px;
-        }}
-
-        .avances-linea,
-        .avances-progreso {{
-            top: 15px;
-        }}
-
-        .pdn-anillo {{
-            width: 38px;
-            height: 38px;
-        }}
-
-        .pdn-anillo-centro {{
-            width: 29px;
-            height: 29px;
-            font-size: 10px;
-        }}
-
-        .cons-valor {{
-            font-size: 27px;
-        }}
-
-        .prof-numero {{
-            font-size: 21px;
-        }}
-
-        .resumen-mapa,
-        .cons-fila,
-        .des-meta {{
-            font-size: 9.5px;
-        }}
-    }}
-
-    @media (max-height: 655px) {{
-        :root {{
-            --alto-mapa: 37vh;
-            --alto-grafica: 11vh;
-            --escala: 0.92;
-        }}
-
-        .des-tarjeta {{
-            min-height: 68px;
-        }}
-
-        .avance-nombre,
-        .des-titulo {{
-            min-height: 24px;
-        }}
-    }}
-
-    @media (max-height: 600px) {{
-        :root {{
-            --escala: 0.84;
-        }}
-    }}
-
-    @media (max-height: 540px) {{
-        :root {{
-            --escala: 0.74;
-        }}
-    }}
-
-    /* Escalado proporcional de respaldo en ventanas muy bajas.
-       El ancho se compensa para seguir ocupando toda la pantalla. */
-    .stMainBlockContainer {{
-        zoom: var(--escala, 1);
-        width: calc(100% / var(--escala, 1));
-    }}
-
-    /* Lienzo general */
-    .stApp {{
-        background-color: #f2efec;
-    }}
-
-    header[data-testid="stHeader"] {{
-        background: transparent;
-        height: 0;
-    }}
-
-    /* Barra de herramientas y pie de Streamlit */
-    [data-testid="stToolbar"],
-    [data-testid="stDecoration"],
-    footer {{
-        display: none;
-    }}
-
-    .block-container {{
-        padding: 0.5rem 1.1rem 0.4rem 1.1rem;
-        max-width: 100%;
-    }}
-
-    /* Separación vertical entre bloques */
-    .stMainBlockContainer div[data-testid="stVerticalBlock"] {{
-        gap: 0.55rem;
-    }}
-
-    /* ------------------------------------------
-       BARRA SUPERIOR
-    ------------------------------------------ */
-
-    .st-key-barra_superior {{
-        background: linear-gradient(90deg, {VINO_OSCURO} 0%, {VINO} 55%);
-        border-radius: 12px;
-        padding: 8px 22px 2px 22px;
-        box-shadow: 0 2px 10px rgba(22, 26, 29, 0.14);
-    }}
-
-    .st-key-barra_superior label p {{
-        color: #ffffff !important;
-        font-size: 12px !important;
-        font-weight: 600 !important;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-    }}
-
-    .st-key-barra_superior div[data-baseweb="select"] > div {{
-        background-color: #ffffff;
-        border: none;
-        border-radius: 7px;
-        min-height: 32px;
-        font-size: 13px;
-        font-weight: 600;
-        color: {TINTA};
-    }}
-
-    .st-key-barra_superior div[data-testid="stSelectbox"] {{
-        margin-bottom: 4px;
-    }}
-
-    .titulo-barra {{
-        color: #ffffff;
-        font-size: 21px;
-        font-weight: 700;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        line-height: 1.15;
-        margin-top: 4px;
-    }}
-
-    .subtitulo-barra {{
-        color: rgba(255, 255, 255, 0.78);
-        font-size: 11.5px;
-        letter-spacing: 0.02em;
-        margin-top: 2px;
-    }}
-
-    /* ------------------------------------------
-       TARJETAS CONTENEDORAS
-    ------------------------------------------ */
-
-    .st-key-tarjeta_mapa,
-    .st-key-tarjeta_profesionalizacion,
-    .st-key-tarjeta_designaciones,
-    .st-key-tarjeta_avances,
-    .st-key-tarjeta_pdn {{
-        background-color: #ffffff;
-        border-radius: 12px;
-        padding: 10px 16px 8px 16px;
-        box-shadow: 0 1px 6px rgba(22, 26, 29, 0.08);
-    }}
-
-    /* La PDN comparte fila con Profesionalización:
-       ambas tarjetas se ven de la misma altura. */
-    .st-key-tarjeta_pdn {{
-        height: 100%;
-    }}
-
-    .titulo-seccion {{
-        color: {VINO};
-        font-size: 13px;
-        font-weight: 700;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        margin: 0;
-    }}
-
-    .nota-seccion {{
-        color: {GRIS};
-        font-size: 10.5px;
-        margin: 1px 0 6px 0;
-    }}
-
-    /* ------------------------------------------
-       BLOQUE DE GRADO DE CONSOLIDACION
-    ------------------------------------------ */
-
-    .cons-encabezado {{
-        display: flex;
-        align-items: flex-end;
-        gap: 18px;
-        flex-wrap: wrap;
-        margin: 0 0 4px 0;
-    }}
-
-    .cons-entidad {{
-        font-size: 13px;
-        font-weight: 700;
-        color: {TINTA};
-        line-height: 1.2;
-    }}
-
-    .cons-valor {{
-        font-size: 38px;
-        font-weight: 700;
-        color: {VINO};
-        line-height: 1;
-    }}
-
-    .cons-valor span {{
-        font-size: 13px;
-        font-weight: 600;
-        color: {GRIS};
-    }}
-
-    .cons-componentes {{
-        flex: 1;
-        min-width: 220px;
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-    }}
-
-    .cons-fila {{
-        display: grid;
-        grid-template-columns: 116px 1fr 70px;
-        align-items: center;
-        gap: 8px;
-        font-size: 10.5px;
-        line-height: 1.25;
-        color: {TINTA};
-    }}
-
-    .cons-pista {{
-        background-color: #ece7e9;
-        border-radius: 6px;
-        height: 7px;
-        overflow: hidden;
-    }}
-
-    .cons-relleno {{
-        display: block;
-        height: 100%;
-        border-radius: 6px;
-        background: linear-gradient(90deg, {ORO} 0%, {VINO} 100%);
-    }}
-
-    .cons-porcentaje {{
-        text-align: right;
-        font-weight: 700;
-        color: {VINO_OSCURO};
-        white-space: nowrap;
-    }}
-
-    .cons-porcentaje span {{
-        font-weight: 400;
-        color: {GRIS};
-    }}
-
-    .leyenda-mapa {{
-        display: flex;
-        align-items: center;
-        gap: 9px;
-        margin-top: 0;
-        font-size: 10px;
-        color: {GRIS};
-    }}
-
-    .leyenda-barra {{
-        flex: 0 0 165px;
-        height: 8px;
-        border-radius: 5px;
-        background: {GRADIENTE_LEYENDA};
-    }}
-
-    .leyenda-sin-dato {{
-        display: inline-block;
-        width: 11px;
-        height: 11px;
-        border-radius: 3px;
-        background-color: #d9d9d9;
-        margin-right: 4px;
-        vertical-align: -1px;
-    }}
-
-    .resumen-mapa {{
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 6px 16px;
-        margin-top: 6px;
-        padding-top: 6px;
-        border-top: 1px solid #ece7e9;
-        font-size: 10.5px;
-        line-height: 1.3;
-        color: {TINTA};
-    }}
-
-    .resumen-etiqueta {{
-        display: block;
-        font-size: 10px;
-        font-weight: 700;
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
-        color: {GRIS};
-        margin-bottom: 2px;
-    }}
-
-    .resumen-mapa b {{
-        color: {VINO_OSCURO};
-    }}
-
-    /* ------------------------------------------
-       DESIGNACIONES
-    ------------------------------------------ */
-
-    .grid-designaciones {{
-        display: grid;
-        grid-template-columns: repeat(5, 1fr);
-        gap: 8px;
-    }}
-
-    .des-tarjeta {{
-        border-radius: 10px;
-        padding: 8px 8px 8px 10px;
-        background: linear-gradient(
-            180deg,
-            var(--tinte) 0%,
-            #ffffff 78%
-        );
-        border: 1px solid var(--borde);
-        display: flex;
-        flex-direction: column;
-        gap: 3px;
-        min-height: 112px;
-    }}
-
-    .des-icono {{
-        width: 26px;
-        height: 26px;
-        border-radius: 7px;
-        background-color: var(--color);
-        color: #ffffff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }}
-
-    .des-titulo {{
-        font-size: 9.5px;
-        font-weight: 600;
-        line-height: 1.2;
-        color: {TINTA};
-        min-height: 34px;
-    }}
-
-    .des-valor {{
-        font-size: 25px;
-        font-weight: 700;
-        color: {TINTA};
-        line-height: 1;
-    }}
-
-    .des-meta {{
-        font-size: 9.5px;
-        color: {GRIS};
-        margin-top: -1px;
-    }}
-
-    .des-resumen {{
-        margin-top: 6px;
-        padding-top: 5px;
-        border-top: 1px solid #ece7e9;
-        display: flex;
-        align-items: baseline;
-        gap: 7px;
-        font-size: 10.5px;
-        color: {GRIS};
-    }}
-
-    .des-resumen b {{
-        font-size: 15px;
-        color: {VINO};
-    }}
-
-    /* ------------------------------------------
-       LINEA DE AVANCES
-    ------------------------------------------ */
-
-    .avances-fila {{
-        display: grid;
-        grid-template-columns: repeat(5, 1fr);
-        position: relative;
-        margin-top: 2px;
-    }}
-
-    .avances-linea {{
-        position: absolute;
-        top: 22px;
-        left: 10%;
-        width: 80%;
-        height: 3px;
-        background-color: #e4dfe1;
-        z-index: 1;
-    }}
-
-    .avances-progreso {{
-        position: absolute;
-        top: 22px;
-        left: 10%;
-        height: 3px;
-        background-color: {VINO};
-        z-index: 2;
-    }}
-
-    .avance-etapa {{
-        position: relative;
-        z-index: 3;
-        text-align: center;
-        padding: 0 4px;
-    }}
-
-    .avance-circulo {{
-        width: 44px;
-        height: 44px;
-        margin: 0 auto 5px auto;
-        border-radius: 50%;
-        border: 2.5px solid {VINO};
-        background-color: #ffffff;
-        color: {VINO};
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }}
-
-    .avance-etapa.inactiva .avance-circulo {{
-        border-color: #d8d3d5;
-        color: #c3bdbf;
-        background-color: #fafafa;
-    }}
-
-    .avance-nombre {{
-        font-size: 9.5px;
-        font-weight: 600;
-        line-height: 1.2;
-        color: {TINTA};
-        min-height: 34px;
-    }}
-
-    .avance-valor {{
-        display: inline-block;
-        font-size: 9.5px;
-        font-weight: 700;
-        color: {VINO_OSCURO};
-        background-color: #f8f1f3;
-        border-radius: 5px;
-        padding: 1px 6px;
-        margin-top: 1px;
-    }}
-
-    .avance-etapa.inactiva .avance-nombre {{
-        color: {GRIS};
-    }}
-
-    .avance-etapa.inactiva .avance-valor {{
-        color: {GRIS};
-        background-color: #f4f2f3;
-    }}
-
-    /* ------------------------------------------
-       PDN
-    ------------------------------------------ */
-
-    .pdn-contenido {{
-        display: grid;
-        grid-template-columns: 1fr auto 140px;
-        align-items: center;
-        gap: 10px;
-    }}
-
-    .grid-pdn {{
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 6px;
-    }}
-
-    .pdn-sistema {{
-        text-align: center;
-    }}
-
-    .pdn-anillo {{
-        width: 52px;
-        height: 52px;
-        margin: 0 auto 4px auto;
-        border-radius: 50%;
-        background:
-            conic-gradient(
-                {VINO} calc(var(--pct) * 1%),
-                #ece7e9 0
-            );
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }}
-
-    .pdn-anillo-centro {{
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background-color: #ffffff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 14px;
-        font-weight: 700;
-        color: {VINO_OSCURO};
-    }}
-
-    .pdn-valor {{
-        font-size: 11.5px;
-        font-weight: 700;
-        color: {TINTA};
-    }}
-
-    .pdn-valor span {{
-        font-size: 9.5px;
-        font-weight: 400;
-        color: {GRIS};
-    }}
-
-    .pdn-porcentaje {{
-        font-size: 10px;
-        font-weight: 600;
-        color: {VINO};
-    }}
-
-    .pdn-descripcion {{
-        font-size: 9.5px;
-        line-height: 1.25;
-        color: {GRIS};
-        margin-top: 5px;
-        padding: 0 4px;
-    }}
-
-    .pdn-separador {{
-        width: 1px;
-        height: 80px;
-        background-color: #ece7e9;
-    }}
-
-    .pdn-total {{
-        text-align: center;
-        color: {VINO};
-    }}
-
-    .pdn-total-titulo {{
-        font-size: 10px;
-        font-weight: 600;
-        color: {TINTA};
-        line-height: 1.25;
-        margin: 2px 0 1px 0;
-    }}
-
-    .pdn-total-valor {{
-        font-size: 22px;
-        font-weight: 700;
-        color: {TINTA};
-        line-height: 1.1;
-    }}
-
-    .pdn-total-valor span {{
-        font-size: 11px;
-        color: {GRIS};
-    }}
-
-    /* ------------------------------------------
-       PROFESIONALIZACION
-    ------------------------------------------ */
-
-    .prof-encabezado {{
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin: 2px 0 2px 0;
-    }}
-
-    .prof-icono {{
-        flex: 0 0 auto;
-        line-height: 0;
-    }}
-
-    .prof-numero {{
-        font-size: 30px;
-        font-weight: 700;
-        color: {VINO};
-        line-height: 1;
-    }}
-
-    .prof-texto {{
-        font-size: 10px;
-        color: {TINTA};
-        line-height: 1.3;
-    }}
-
-    /* El mapa y la gráfica se ajustan al alto de la ventana.
-       Streamlit fija el alto del contenedor de cada gráfica,
-       por eso se sobrescribe en toda la cadena. */
-    .st-key-tarjeta_mapa
-        [data-testid="stElementContainer"]:has([data-testid="stPlotlyChart"]),
-    .st-key-tarjeta_mapa [data-testid="stFullScreenFrame"],
-    .st-key-tarjeta_mapa [data-testid="stPlotlyChart"] {{
-        height: var(--alto-mapa) !important;
-        min-height: 0 !important;
-        flex: 0 0 auto !important;
-    }}
-
-    .st-key-tarjeta_profesionalizacion
-        [data-testid="stElementContainer"]:has([data-testid="stPlotlyChart"]),
-    .st-key-tarjeta_profesionalizacion [data-testid="stFullScreenFrame"],
-    .st-key-tarjeta_profesionalizacion [data-testid="stPlotlyChart"] {{
-        height: var(--alto-grafica) !important;
-        min-height: 0 !important;
-        flex: 0 0 auto !important;
-    }}
-
-    .st-key-tarjeta_mapa [data-testid="stPlotlyChart"] > div,
-    .st-key-tarjeta_mapa .js-plotly-plot,
-    .st-key-tarjeta_mapa .plot-container,
-    .st-key-tarjeta_mapa .svg-container,
-    .st-key-tarjeta_profesionalizacion [data-testid="stPlotlyChart"] > div,
-    .st-key-tarjeta_profesionalizacion .js-plotly-plot,
-    .st-key-tarjeta_profesionalizacion .plot-container,
-    .st-key-tarjeta_profesionalizacion .svg-container {{
-        height: 100% !important;
-    }}
-
-    .sin-dato {{
-        font-size: 12.5px;
-        color: {GRIS};
-        padding: 14px 0;
-    }}
-
-    .aviso-sin-informacion {{
-        background-color: #fdf6e9;
-        border-left: 3px solid {ORO};
-        border-radius: 6px;
-        padding: 5px 10px;
-        margin: 2px 0 6px 0;
-        font-size: 10.5px;
-        line-height: 1.3;
-        color: {TINTA};
-    }}
-
-    /* Botón de regreso a la vista nacional */
-    .st-key-boton_nacional button {{
-        background-color: #ffffff;
-        border: 1px solid {VINO};
-        color: {VINO};
-        border-radius: 8px;
-        padding: 2px 10px;
-        font-size: 12px;
-        font-weight: 600;
-    }}
-
-    .st-key-boton_nacional button:hover {{
-        background-color: {VINO};
-        color: #ffffff;
-    }}
-
-    </style>
-    """
-)
+def cargar_css(ruta):
+    with open(ruta, "r", encoding="utf-8") as archivo:
+        css = archivo.read()
+
+    st.html(
+        f"""
+        <style>
+        {css}
+        </style>
+        """
+    )
+
+
+cargar_css("css/styles.css")
 
 
 # --------------------------------------------------
@@ -1023,10 +201,19 @@ def cargar_geojson():
     ) as archivo:
         return json.load(archivo)
 
+@st.cache_data(show_spinner=False)
+def cargar_fichas_especiales():
+
+    with open(
+        "assets/fichas_especiales.json",
+        "r",
+        encoding="utf-8"
+    ) as archivo:
+        return json.load(archivo)
 
 datos = cargar_datos()
 geojson_mexico = cargar_geojson()
-
+fichas_especiales = cargar_fichas_especiales()
 
 # --------------------------------------------------
 # 6. UTILIDADES DE FORMATO
@@ -1139,6 +326,8 @@ with st.container(key="barra_superior"):
 
 entidad_seleccionada = st.session_state["entidad_activa"]
 es_nacional = entidad_seleccionada == NACIONAL
+es_ficha_especial = entidad_seleccionada in fichas_especiales
+
 
 # La entidad se refleja en la URL para poder compartir la vista
 if es_nacional:
@@ -1147,6 +336,140 @@ if es_nacional:
 elif st.query_params.get("entidad") != entidad_seleccionada:
     st.query_params["entidad"] = entidad_seleccionada
 
+
+# --------------------------------------------------
+# 7.1 FICHAS INSTITUCIONALES ESPECIALES
+# --------------------------------------------------
+
+if es_ficha_especial:
+
+    ficha = fichas_especiales[entidad_seleccionada]
+
+    # Botón para regresar a la vista nacional
+    if st.button(
+        "← Regresar a la vista nacional",
+        key="boton_nacional_ficha"
+    ):
+        st.session_state["entidad_activa"] = NACIONAL
+        st.rerun()
+
+       # ---------- Preparación de hechos relevantes ----------
+
+    hechos_html = ""
+
+    for hecho in ficha["hechos_relevantes"]:
+
+        hechos_html += f"""
+            <div class="ficha-hecho">
+                <span class="ficha-vineta">•</span>
+                <span>{hecho}</span>
+            </div>
+        """
+
+
+    # ---------- Preparación de línea de tiempo ----------
+
+    eventos_timeline_html = ""
+
+    for evento in ficha["linea_tiempo"]:
+
+        puntos_html = "".join(
+            f"<li>{punto}</li>"
+            for punto in evento["eventos"]
+        )
+
+        eventos_timeline_html += f"""
+            <div class="ficha-evento">
+
+                <div class="ficha-evento-punto"></div>
+
+                <div class="ficha-evento-fecha">
+                    {evento["fecha"]}
+                </div>
+
+                <ul class="ficha-evento-textos">
+                    {puntos_html}
+                </ul>
+
+            </div>
+        """
+
+
+    # ---------- Ficha completa ----------
+
+    st.html(
+        f"""
+        <div class="ficha-especial">
+
+            <div class="ficha-encabezado">
+
+                <div class="ficha-etiqueta">
+                    Situación institucional especial
+                </div>
+
+                <div class="ficha-entidad">
+                    {entidad_seleccionada}
+                </div>
+
+                <div class="ficha-situacion">
+                    {ficha["situacion_actual"]}
+                </div>
+
+                <div class="ficha-nota">
+                    Información de carácter institucional no sujeta
+                    a actualización trimestral
+                </div>
+
+            </div>
+
+
+            <div class="ficha-contenido">
+
+                <div class="ficha-columna-situacion">
+
+                    <div class="ficha-titulo-seccion">
+                        Situación actual
+                    </div>
+
+                    <div class="ficha-texto">
+                        {ficha["situacion_institucional"]}
+                    </div>
+
+                </div>
+
+
+                <div class="ficha-columna-hechos">
+
+                    <div class="ficha-titulo-seccion">
+                        Hechos relevantes
+                    </div>
+
+                    <div class="ficha-hechos">
+                        {hechos_html}
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="ficha-linea-bloque">
+
+                <div class="ficha-titulo-seccion">
+                    Línea de tiempo
+                </div>
+
+                <div class="ficha-timeline">
+                    {eventos_timeline_html}
+                </div>
+
+            </div>
+
+        </div>
+        """
+    )
+
+    st.stop()
 
 # --------------------------------------------------
 # 8. CONFIGURACION DE INDICADORES
@@ -1207,27 +530,37 @@ ETAPAS = [
     {
         "nombre": "Aprobación PEA",
         "columna": "fecha_aprobacion_pea",
-        "icono": "lista"
+        "icono": "lista",
+        "columna_link": "link_pea",
+        "columna_texto": "text_aprob_pea"
     },
     {
         "nombre": "Aprobación del PI-PEA",
         "columna": "fecha_aprobacion_pipea",
-        "icono": "grading"
+        "icono": "grading",
+        "columna_link": "link_pipea",
+        "columna_texto": "text_aprob_pipea"
     },
     {
         "nombre": "Ejecución del PI-PEA",
         "columna": "fecha_ejecucion_pipea",
-        "icono": "play"
+        "icono": "play",
+        "columna_link": None,
+        "columna_texto": "text_ejec_pipea"
     },
     {
         "nombre": "Metodología de seguimiento y evaluación",
         "columna": "fecha_aprobacion_sye",
-        "icono": "grafica"
+        "icono": "grafica",
+        "columna_link": "link_sise",
+        "columna_texto": "text_metodologia_sise"
     },
     {
         "nombre": "Evaluación de la política",
         "columna": "fecha_evaluacion",
-        "icono": "check"
+        "icono": "check",
+        "columna_link": None,
+        "columna_texto": "text_evalua_politica"
     }
 ]
 
@@ -1335,12 +668,39 @@ def calcular_indicadores(datos_periodo, entidad):
 
     for posicion, config in enumerate(DESIGNACIONES):
 
-        if base.empty:
+        # Excepción nacional para Titular SESEA
+        if nacional and config["clave"] == "tit":
+
+            base_titular = datos_periodo[
+                datos_periodo["nom_ent"] != "Oaxaca"
+            ].copy()
+
+            vigentes = int(
+                pd.to_numeric(
+                    base_titular["des_vig_tit"],
+                    errors="coerce"
+                )
+                .fillna(0)
+                .sum()
+            )
+
+            total = 31
+
+        elif base.empty:
+
             vigentes = 0
             total = 0
+
         else:
-            vigentes = int(base[f"des_vig_{config['clave']}"].sum())
-            pendientes = int(base[f"des_pend_{config['clave']}"].sum())
+
+            vigentes = int(
+                base[f"des_vig_{config['clave']}"].sum()
+            )
+
+            pendientes = int(
+                base[f"des_pend_{config['clave']}"].sum()
+            )
+
             total = vigentes + pendientes
 
         designaciones.append(
@@ -1418,34 +778,92 @@ def calcular_indicadores(datos_periodo, entidad):
 
     for config in ETAPAS:
 
+        # Sin información
         if base.empty:
+
             etapas.append(
                 {
                     **config,
                     "valor": "Sin información",
-                    "activa": False
+                    "activa": False,
+                    "link": None,
+                    "texto": None
                 }
             )
+
             continue
 
+        # Fecha correspondiente a la etapa
         fechas = pd.to_datetime(
             base[config["columna"]],
             errors="coerce"
         )
 
+        # ------------------------------------------
+        # VISTA NACIONAL
+        # ------------------------------------------
+
         if nacional:
+
             conteo = int(fechas.notna().sum())
 
             etapas.append(
                 {
                     **config,
                     "valor": f"{conteo} de {len(base)}",
-                    "activa": conteo > 0
+                    "activa": conteo > 0,
+                    "link": None,
+                    "texto": None
                 }
             )
+
+        # ------------------------------------------
+        # VISTA ESTATAL
+        # ------------------------------------------
+
         else:
+
             fecha = fechas.iloc[0]
+
             activa = pd.notna(fecha)
+
+            # ---------- Link ----------
+
+            link = None
+
+            columna_link = config.get("columna_link")
+
+            if columna_link:
+
+                valor_link = base[columna_link].iloc[0]
+
+                if pd.notna(valor_link):
+
+                    valor_link = str(valor_link).strip()
+
+                    if valor_link.startswith(
+                        ("http://", "https://")
+                    ):
+                        link = valor_link
+
+            # ---------- Texto ----------
+
+            texto = None
+
+            columna_texto = config.get("columna_texto")
+
+            if columna_texto:
+
+                valor_texto = base[columna_texto].iloc[0]
+
+                if pd.notna(valor_texto):
+
+                    valor_texto = str(valor_texto).strip()
+
+                    if valor_texto:
+                        texto = valor_texto
+
+            # ---------- Guardar etapa ----------
 
             etapas.append(
                 {
@@ -1455,11 +873,15 @@ def calcular_indicadores(datos_periodo, entidad):
                         if activa
                         else "Sin fecha"
                     ),
-                    "activa": activa
+                    "activa": activa,
+                    "link": link,
+                    "texto": texto
                 }
             )
 
+
     indicadores["etapas"] = etapas
+
 
     # ---------- Profesionalización ----------
 
@@ -1637,7 +1059,10 @@ with col_izquierda:
 
         mapa_datos["estado_informacion"] = mapa_datos.apply(
             lambda fila:
-                "Sin información disponible"
+            (
+                "Información de carácter institucional <br>"
+                "no sujeta a actualización trimestral"
+            )
                 if fila["tiene_informacion"] == 0
                 else f'{fila["grado_cons_total"]:.1f} / 100',
             axis=1
@@ -1658,6 +1083,7 @@ with col_izquierda:
             featureidkey="properties.name",
             color="grado_cons_total",
             hover_name="nom_ent",
+            custom_data=["estado_informacion"],
             hover_data={
                 "nombre_mapa": False,
                 "grado_cons_total": False,
@@ -1665,12 +1091,17 @@ with col_izquierda:
                 "estado_informacion": True
             },
             range_color=(0, 100),
-            labels={
-                "estado_informacion": "Grado de consolidación"
-            },
             color_continuous_scale=ESCALA_MAPA,
             projection="mercator"
         )
+
+        fig_mapa.update_traces(
+    hovertemplate=(
+        "<b>%{hovertext}</b><br><br>"
+        "Grado de consolidación: %{customdata[0]}"
+        "<extra></extra>"
+    )
+)
 
         fig_sin_info = px.choropleth(
             mapa_sin_info,
@@ -1678,18 +1109,30 @@ with col_izquierda:
             locations="nombre_mapa",
             featureidkey="properties.name",
             hover_name="nom_ent",
-            hover_data={
-                "nombre_mapa": False,
-                "grado_cons_total": False,
-                "tiene_informacion": False,
-                "estado_informacion": True
-            },
+            custom_data=["estado_informacion"],
             color_discrete_sequence=["#D9D9D9"],
             projection="mercator"
         )
 
+        fig_sin_info.update_traces(
+            hovertemplate=(
+                "<b>%{hovertext}</b><br><br>"
+                "%{customdata[0]}"
+                "<extra></extra>"
+            )
+        )
+
         for trace in fig_sin_info.data:
             fig_mapa.add_trace(trace)
+
+        for trace in fig_mapa.data:
+
+            if trace.name == "":
+                trace.hovertemplate = (
+                    "<b>%{hovertext}</b><br><br>"
+                    "%{customdata[0]}"
+                    "<extra></extra>"
+        )
 
         fig_mapa.update_traces(
             marker_line_color="#ffffff",
@@ -1880,6 +1323,116 @@ with col_izquierda:
                     st.rerun()
 
 
+    # ----------------------------------------------
+    # 13. AVANCES DE LA IMPLEMENTACION
+    # ----------------------------------------------
+
+    with st.container(key="tarjeta_avances"):
+
+        st.html(
+            '<div class="titulo-seccion">'
+            'Avances de la implementación</div>'
+        )
+
+        if es_nacional:
+            nota_avances = (
+                "Entidades que han concluido cada etapa "
+                "de la política estatal."
+            )
+        else:
+            nota_avances = (
+                "Fechas registradas para cada etapa "
+                "de la política estatal."
+            )
+
+        st.html(f'<div class="nota-seccion">{nota_avances}</div>')
+
+        etapas_activas = [
+            posicion
+            for posicion, etapa in enumerate(indicadores["etapas"])
+            if etapa["activa"]
+        ]
+
+        ultima_activa = max(etapas_activas) if etapas_activas else 0
+        ancho_progreso = ultima_activa * 20
+        etapas_html = ""
+
+        for etapa in indicadores["etapas"]:
+
+            clase = "" if etapa["activa"] else " inactiva"
+
+            if not es_nacional and etapa.get("link"):
+                link_seguro = html.escape(etapa["link"], quote=True)
+                link_html = f"""
+                    <a class="avance-link"
+                       href="{link_seguro}"
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       title="Consultar documento">
+                        {icono("link", VINO, 16)}
+                    </a>
+                """
+            else:
+                link_html = ""
+
+            if not es_nacional and etapa.get("texto"):
+                texto_seguro = html.escape(etapa["texto"])
+                circulo_html = f"""
+                    <details class="avance-info-etapa">
+                        <summary class="avance-circulo"
+                                 title="Ver información de la etapa">
+                            {icono(
+                                etapa["icono"],
+                                VINO if etapa["activa"] else "#c3bdbf",
+                                24
+                            )}
+                        </summary>
+                        <div class="avance-info-contenido">
+                            {texto_seguro}
+                        </div>
+                    </details>
+                """
+            else:
+                circulo_html = f"""
+                    <div class="avance-circulo">
+                        {icono(
+                            etapa["icono"],
+                            VINO if etapa["activa"] else "#c3bdbf",
+                            24
+                        )}
+                    </div>
+                """
+
+            etapas_html += f"""
+                <div class="avance-etapa{clase}">
+                    {circulo_html}
+
+                    <div class="avance-nombre">
+                        {etapa['nombre']}
+                    </div>
+
+                    <div class="avance-documento">
+                        {link_html}
+                    </div>
+
+                    <div class="avance-valor">
+                        {etapa['valor']}
+                    </div>
+                </div>
+            """
+
+        st.html(
+            f"""
+            <div class="avances-fila">
+                <div class="avances-linea"></div>
+                <div class="avances-progreso"
+                     style="width: {ancho_progreso}%"></div>
+                {etapas_html}
+            </div>
+            """
+        )
+
+
 # --------------------------------------------------
 # 12. DESIGNACIONES VIGENTES
 # --------------------------------------------------
@@ -1897,20 +1450,22 @@ with col_derecha:
         )
 
         tarjetas_html = ""
-
         hay_informacion = indicadores["hay_informacion"]
 
         for item in indicadores["designaciones"]:
 
-            valor_tarjeta = (
-                item["vigentes"] if hay_informacion else "s/d"
-            )
-
-            meta_tarjeta = (
-                f"de {item['total']}"
-                if hay_informacion
-                else "Sin información"
-            )
+            if item["clave"] == "tit" and not es_nacional:
+                valor_tarjeta = "Sí" if item["vigentes"] == 1 else "No"
+                meta_tarjeta = ""
+            else:
+                valor_tarjeta = (
+                    item["vigentes"] if hay_informacion else "s/d"
+                )
+                meta_tarjeta = (
+                    f"de {item['total']}"
+                    if hay_informacion
+                    else "Sin información"
+                )
 
             tarjetas_html += f"""
                 <div class="des-tarjeta"
@@ -1942,76 +1497,10 @@ with col_derecha:
         st.html(
             f"""
             <div class="grid-designaciones">{tarjetas_html}</div>
-
             <div class="des-resumen">{resumen_designaciones}</div>
             """
         )
 
-    # ----------------------------------------------
-    # 13. AVANCES DE LA IMPLEMENTACION
-    # ----------------------------------------------
-
-    with st.container(key="tarjeta_avances"):
-
-        st.html(
-            '<div class="titulo-seccion">'
-            'Avances de la implementación</div>'
-        )
-
-        if es_nacional:
-            nota_avances = (
-                "Entidades que han concluido cada etapa "
-                "de la política estatal."
-            )
-        else:
-            nota_avances = (
-                "Fechas registradas para cada etapa "
-                "de la política estatal."
-            )
-
-        st.html(f'<div class="nota-seccion">{nota_avances}</div>')
-
-        # Longitud del avance sobre la línea
-        etapas_activas = [
-            posicion
-            for posicion, etapa in enumerate(indicadores["etapas"])
-            if etapa["activa"]
-        ]
-
-        ultima_activa = max(etapas_activas) if etapas_activas else 0
-
-        ancho_progreso = ultima_activa * 20
-
-        etapas_html = ""
-
-        for etapa in indicadores["etapas"]:
-
-            clase = "" if etapa["activa"] else " inactiva"
-
-            etapas_html += f"""
-                <div class="avance-etapa{clase}">
-                    <div class="avance-circulo">
-                        {icono(
-                            etapa["icono"],
-                            VINO if etapa["activa"] else "#c3bdbf",
-                            24
-                        )}
-                    </div>
-                    <div class="avance-nombre">{etapa['nombre']}</div>
-                    <div class="avance-valor">{etapa['valor']}</div>
-                </div>
-            """
-
-        st.html(
-            f"""
-            <div class="avances-fila">
-                <div class="avances-linea"></div>
-                <div class="avances-progreso"
-                     style="width: {ancho_progreso}%"></div>
-                {etapas_html}
-            </div>
-            """
-        )
 
     # ----------------------------------------------
     # 14. PDN Y PROFESIONALIZACION (ultima fila)
@@ -2125,26 +1614,29 @@ with col_derecha:
     ):
 
         st.html(
-            f"""
-            <div class="titulo-seccion">Profesionalización</div>
+    f"""
+    <div class="titulo-seccion">Profesionalización</div>
 
-            <div class="prof-encabezado">
-                <div class="prof-icono">{icono("finanzas", VINO, 26)}</div>
-                <div class="prof-numero">
-                    {formato(indicadores["capacitadas"])}
-                </div>
-                <div class="prof-texto">
-                    Personas servidoras públicas<br>
-                    capacitadas por las SESEA
-                </div>
-            </div>
+    <div class="prof-encabezado">
+        <div class="prof-icono">{icono("finanzas", VINO, 26)}</div>
 
-            <div class="nota-seccion">
-                Plataforma de Aprendizaje Anticorrupción ·
-                personas capacitadas por institución
-            </div>
-            """
-        )
+        <div class="prof-numero">
+            {formato(indicadores["capacitadas"])}
+        </div>
+
+        <div class="prof-texto">
+            Personas servidoras públicas<br>
+            capacitadas por las SESEA
+        </div>
+    </div>
+
+    <div class="prof-separador"></div>
+
+    <div class="prof-subtitulo">
+        Personas servidoras públicas capacitadas por la PAA
+    </div>
+    """
+)
 
         df_paa = indicadores["paa"]
 

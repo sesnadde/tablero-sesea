@@ -145,9 +145,27 @@ for columna in columnas_fecha:
         else None
     )
 
+# --------------------------------------------------
+# 6. PREPARAR LINKS Y TEXTOS
+# --------------------------------------------------
+
+columnas_texto = [
+    "link_pea",
+    "link_pipea",
+    "link_sise",
+    "text_aprob_pea",
+    "text_aprob_pipea",
+    "text_ejec_pipea",
+    "text_metodologia_sise",
+    "text_evalua_politica"
+]
+
+for columna in columnas_texto:
+    if columna in df.columns:
+        df[columna] = df[columna].astype("string")
 
 # --------------------------------------------------
-# 6. CONVERTIR VALORES VACIOS A NULL 
+# 7. CONVERTIR VALORES VACIOS A NULL 
 # --------------------------------------------------
 
 df = df.astype(object).where(
@@ -156,14 +174,14 @@ df = df.astype(object).where(
 )
 
 # --------------------------------------------------
-# 7. CONVERTIR VALORES VACIOS A NULL 
+# 8. CONVERTIR VALORES VACIOS A NULL 
 # --------------------------------------------------
 
 registros = df.to_dict(orient="records")
 
 
 # --------------------------------------------------
-# 8. INSERTAR EN SUPABASE
+# 9. INSERTAR EN SUPABASE
 # --------------------------------------------------
 
 respuesta = (
@@ -178,7 +196,7 @@ respuesta = (
 
 
 # --------------------------------------------------
-# 9. RESULTADO
+# 10. RESULTADO
 # --------------------------------------------------
 
 print("\nSincronización realizada correctamente.")
