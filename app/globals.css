@@ -21,8 +21,7 @@
     #9b2247 100%
   );
 
-  /* Dimensiones del dashboard */
-  --alto-grafica: 26vh;
+  /* Escala del dashboard */
   --escala: 1;
 }
 
@@ -40,10 +39,6 @@ body {
 }
 
 @media (max-height: 860px) {
-  :root {
-    --alto-grafica: 20vh;
-  }
-
   .nota-seccion,
   .pdn-descripcion {
     display: none;
@@ -62,7 +57,6 @@ body {
 /* Pantallas de poca altura: todo se compacta */
 @media (max-height: 780px) {
   :root {
-    --alto-grafica: 15vh;
     --escala: 0.96;
   }
 
@@ -152,10 +146,6 @@ body {
 
 /* Pantallas muy bajas: mínima expresión */
 @media (max-height: 690px) {
-  :root {
-    --alto-grafica: 13vh;
-  }
-
   .des-tarjeta {
     min-height: 76px;
   }
@@ -207,7 +197,6 @@ body {
 
 @media (max-height: 655px) {
   :root {
-    --alto-grafica: 11vh;
     --escala: 0.92;
   }
 
@@ -233,15 +222,16 @@ body {
   }
 }
 
-/* Escalado proporcional de respaldo en ventanas muy bajas.
-   El ancho se compensa para seguir ocupando toda la pantalla. */
+/* Escalado proporcional. En el tablero, useEscalaPantalla fija
+   --escala en línea para que el alto coincida con el de la ventana;
+   los valores de las media queries quedan como respaldo (fichas
+   especiales y pantallas angostas). Con ancho automático el zoom ya
+   ocupa todo el ancho, no hace falta compensarlo. */
 .app-shell {
   zoom: var(--escala, 1);
-  width: calc(100% / var(--escala, 1));
 }
 
 .app-shell {
-  min-height: 100vh;
   padding: 0.5rem 1.1rem 0.4rem 1.1rem;
   max-width: 100%;
   box-sizing: border-box;
@@ -338,23 +328,25 @@ body {
   text-transform: uppercase;
   line-height: 1.15;
   margin-top: 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* El título siempre se muestra completo: si no cabe en una línea
+     pasa a dos, repartidas de forma pareja. */
+  text-wrap: balance;
+  overflow-wrap: break-word;
 }
 
 /* ------------------------------------------
    DISTRIBUCION PRINCIPAL
 ------------------------------------------ */
 
+/* El alto lo marca la columna derecha (designaciones, PDN,
+   profesionalización y nivel) con su tamaño natural; la columna del
+   mapa se estira o encoge para igualarla. */
 .contenido-principal {
   display: grid;
   grid-template-columns: 1fr 1.28fr;
-  grid-template-rows: 1fr;
+  grid-template-rows: auto;
   gap: 0 1rem;
-  align-items: start;
-  flex: 1;
-  min-height: 0;
+  align-items: stretch;
 }
 
 .columna {
@@ -365,13 +357,6 @@ body {
   min-height: 0;
 }
 
-/* La columna del mapa y los avances debe ocupar todo el alto
-   disponible de la página; la columna de designaciones/PDN/
-   profesionalización conserva su alto natural. */
-.contenido-principal > .columna:first-child {
-  align-self: stretch;
-  height: 100%;
-}
 
 .card-mapa {
   display: flex;
@@ -407,10 +392,13 @@ body {
    ambas quedan de la misma altura automáticamente, sin necesidad de
    forzar height:100% (eso las recortaba a la altura de la tarjeta
    más corta y hacía que el texto se saliera de la caja). */
+/* Ambas tarjetas quedan del alto de la PDN; la gráfica de
+   profesionalización llena lo que le queda. */
 .card-pdn,
 .card-profesionalizacion {
-  min-height: 300px;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
 .titulo-seccion {
@@ -476,7 +464,7 @@ body {
 
 .cons-fila {
   display: grid;
-  grid-template-columns: 116px 1fr 70px;
+  grid-template-columns: 116px 1fr 92px;
   align-items: center;
   gap: 8px;
   font-size: 10.5px;
@@ -498,14 +486,25 @@ body {
   background: linear-gradient(90deg, var(--oro) 0%, var(--vino) 100%);
 }
 
+/* Aporte y máximo van en sub-columnas: el aporte alineado a la
+   derecha y el máximo a la izquierda, con cifras de ancho fijo, para
+   que decimales y diagonales queden en vertical entre filas. */
 .cons-porcentaje {
-  text-align: right;
-  font-weight: 700;
-  color: var(--vino-oscuro);
+  display: grid;
+  grid-template-columns: 1fr 3.9em;
+  column-gap: 0.3em;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
-.cons-porcentaje span {
+.cons-aporte {
+  text-align: right;
+  font-weight: 700;
+  color: var(--vino-oscuro);
+}
+
+.cons-maximo {
+  text-align: left;
   font-weight: 400;
   color: var(--gris);
 }
@@ -706,6 +705,18 @@ body {
   margin-top: 1px;
 }
 
+/* Nota metodológica al pie de los avances: discreta, pero visible
+   también en pantallas bajas (a diferencia de .nota-seccion). */
+.avances-nota {
+  margin: 6px 0 0 0;
+  padding-top: 4px;
+  border-top: 1px solid #ece7e9;
+  font-size: 9px;
+  font-style: italic;
+  line-height: 1.3;
+  color: var(--gris);
+}
+
 .avance-etapa.inactiva .avance-nombre {
   color: var(--gris);
 }
@@ -829,56 +840,112 @@ body {
   text-align: left;
 }
 
-/* Botón de información por etapa (Avances de la implementación) */
+/* Etapa con información: el círculo es un botón que abre la ventana */
 
-.avance-info-etapa {
-  position: relative;
-  display: flex;
-  justify-content: center;
-}
-
-.avance-info-etapa > summary {
-  list-style: none;
+.avance-circulo-boton {
+  padding: 0;
+  font: inherit;
   cursor: pointer;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  transition: background-color 0.15s ease, transform 0.15s ease;
 }
 
-.avance-info-etapa > summary::-webkit-details-marker {
-  display: none;
-}
-
-.avance-info-etapa > summary:hover {
+.avance-circulo-boton:hover,
+.avance-circulo-boton:focus-visible {
   background-color: #faf5f7;
-  transform: scale(1.04);
+  transform: scale(1.06);
 }
 
-.avance-info-etapa .avance-info-contenido {
-  position: absolute;
-  z-index: 100;
-  width: 220px;
+/* Ventana emergente con la información de la etapa */
 
-  left: 50%;
-  top: 58px;
-  transform: translateX(-50%);
-
-  padding: 10px 12px;
-
-  background: #ffffff;
-  border: 1px solid #e3dddf;
-  border-radius: 7px;
-
-  box-shadow: 0 5px 16px rgba(0, 0, 0, 0.12);
-
+.etapa-modal {
+  width: min(460px, calc(100vw - 32px));
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 18px 48px rgba(22, 26, 29, 0.28);
   color: var(--tinta);
-  font-size: 10px;
-  font-weight: 400;
-  line-height: 1.4;
-  text-align: left;
+  font-family: inherit;
+}
+
+.etapa-modal::backdrop {
+  background-color: rgba(22, 26, 29, 0.45);
+}
+
+.etapa-modal-contenido {
+  position: relative;
+  padding: 18px 22px 20px 22px;
+}
+
+.etapa-modal-cerrar {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--gris);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.etapa-modal-cerrar:hover,
+.etapa-modal-cerrar:focus-visible {
+  background-color: #f4eef0;
+  color: var(--vino);
+}
+
+.etapa-modal-etiqueta {
+  color: var(--vino);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.etapa-modal-titulo {
+  margin: 2px 36px 4px 0;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.etapa-modal-fecha {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--vino-oscuro);
+  background-color: #f8f1f3;
+  border-radius: 5px;
+  padding: 1px 7px;
+}
+
+.etapa-modal-texto {
+  margin: 12px 0 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.etapa-modal-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  background-color: var(--vino);
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.15s ease;
+}
+
+.etapa-modal-link:hover,
+.etapa-modal-link:focus-visible {
+  background-color: var(--vino-oscuro);
 }
 
 /* ------------------------------------------
@@ -888,11 +955,11 @@ body {
 .pdn-contenido {
   display: grid;
   grid-template-columns: 1.45fr 1px 0.85fr;
-  align-items: center;
+  align-items: stretch;
   gap: 18px;
 
+  flex: 1 1 auto;
   min-height: 220px;
-  height: 100%;
 }
 
 .grid-pdn {
@@ -901,7 +968,9 @@ body {
   grid-template-rows: repeat(2, auto);
   gap: 18px 22px;
 
-  align-content: center;
+  /* Los cuatro sistemas se reparten en todo el alto de la tarjeta
+     para no dejar bandas vacías arriba y abajo. */
+  align-content: space-evenly;
   justify-items: center;
 }
 
@@ -961,9 +1030,8 @@ body {
 
 .pdn-separador {
   width: 1px;
-  height: 190px;
   background-color: #ece7e9;
-  align-self: center;
+  margin: 12px 0;
 }
 
 .pdn-total {
@@ -975,7 +1043,6 @@ body {
   align-items: center;
   justify-content: center;
 
-  height: 100%;
   min-height: 180px;
 }
 
@@ -1128,14 +1195,29 @@ body {
 }
 
 /* El mapa y la gráfica se ajustan al alto de la ventana. */
-.mapa-plot-wrapper {
-  flex: 1;
-  min-height: 140px;
+/* Plotly calcula mal la posición del cursor bajo CSS zoom (el hover y
+   el clic caen en otro estado). Los contenedores de las gráficas
+   compensan la escala para que Plotly trabaje a zoom 1; los
+   componentes multiplican sus tamaños de letra por la escala para que
+   se vean proporcionales. Las medidas propias van multiplicadas por
+   --escala porque aquí ya no se escalan solas. */
+.mapa-plot-wrapper,
+.profesionalizacion-plot-wrapper {
+  zoom: calc(1 / var(--escala, 1));
 }
 
+.mapa-plot-wrapper {
+  flex: 1 1 0px;
+  min-height: calc(140px * var(--escala, 1));
+  overflow: hidden;
+}
+
+/* Base de 0px (no 0%): así la gráfica no aporta alto propio y solo
+   ocupa el espacio que deja la tarjeta. */
 .profesionalizacion-plot-wrapper {
-  height: var(--alto-grafica);
-  min-height: 0;
+  flex: 1 1 0px;
+  min-height: calc(120px * var(--escala, 1));
+  overflow: hidden;
 }
 
 .sin-dato {
@@ -1434,6 +1516,13 @@ body {
 
   .fila-pdn-profesionalizacion {
     grid-template-columns: 1fr;
+  }
+
+  /* Apiladas, el mapa ya no tiene una columna vecina que le marque
+     el alto. */
+  .mapa-plot-wrapper {
+    flex: 0 0 auto;
+    height: calc(360px * var(--escala, 1));
   }
 
   .toolbar {

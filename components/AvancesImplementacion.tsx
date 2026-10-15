@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { VINO } from "@/lib/constants";
 import { claveIcono, COLOR_INACTIVO } from "@/lib/iconKeys";
 import type { Etapa } from "@/lib/types";
@@ -7,12 +8,35 @@ import type { Etapa } from "@/lib/types";
 export default function AvancesImplementacion({
   etapas,
   esNacional,
+  entidad,
   iconos
 }: {
   etapas: Etapa[];
   esNacional: boolean;
+  entidad: string;
   iconos: Record<string, string>;
 }) {
+  const [indiceAbierto, setIndiceAbierto] = useState<number | null>(null);
+  const dialogoRef = useRef<HTMLDialogElement>(null);
+
+  const etapaAbierta = indiceAbierto === null ? null : etapas[indiceAbierto];
+
+  // Si cambia la entidad o el periodo, la ventana se cierra para no
+  // mostrar información de otra etapa.
+  useEffect(() => {
+    setIndiceAbierto(null);
+  }, [etapas]);
+
+  // <dialog> se abre con showModal() para obtener el fondo oscurecido,
+  // el cierre con Esc y el foco atrapado dentro de la ventana.
+  useEffect(() => {
+    const dialogo = dialogoRef.current;
+    if (!dialogo) return;
+
+    if (etapaAbierta && !dialogo.open) dialogo.showModal();
+    if (!etapaAbierta && dialogo.open) dialogo.close();
+  }, [etapaAbierta]);
+
   const etapasActivas = etapas
     .map((etapa, indice) => (etapa.activa ? indice : -1))
     .filter((indice) => indice >= 0);
@@ -38,7 +62,7 @@ export default function AvancesImplementacion({
           style={{ width: `${anchoProgreso}%` }}
         />
 
-        {etapas.map((etapa) => {
+        {etapas.map((etapa, indice) => {
           const clase = etapa.activa
             ? "avance-etapa"
             : "avance-etapa inactiva";
@@ -71,15 +95,14 @@ export default function AvancesImplementacion({
           return (
             <div className={clase} key={etapa.nombre}>
               {!esNacional && etapa.texto ? (
-                <details className="avance-info-etapa">
-                  <summary
-                    className="avance-circulo"
-                    title="Ver información de la etapa"
-                  >
-                    {circuloContenido}
-                  </summary>
-                  <div className="avance-info-contenido">{etapa.texto}</div>
-                </details>
+                <button
+                  type="button"
+                  className="avance-circulo avance-circulo-boton"
+                  title="Ver información de la etapa"
+                  onClick={() => setIndiceAbierto(indice)}
+                >
+                  {circuloContenido}
+                </button>
               ) : (
                 <div className="avance-circulo">{circuloContenido}</div>
               )}
@@ -93,6 +116,58 @@ export default function AvancesImplementacion({
           );
         })}
       </div>
+
+      <p className="avances-nota">
+        Nota: Los hitos se presentan según su secuencia de implementación.
+        Cuando las fechas oficiales no siguen un orden cronológico, la
+        visualización prioriza el orden de las etapas.
+      </p>
+
+      <dialog
+        ref={dialogoRef}
+        className="etapa-modal"
+        aria-labelledby="etapa-modal-titulo"
+        onClose={() => setIndiceAbierto(null)}
+        onClick={(evento) => {
+          // El contenido ocupa toda la ventana, así que un clic cuyo
+          // destino es el propio <dialog> cae en el fondo oscurecido.
+          if (evento.target === evento.currentTarget) {
+            dialogoRef.current?.close();
+          }
+        }}
+      >
+        {etapaAbierta && (
+          <div className="etapa-modal-contenido">
+            <button
+              type="button"
+              className="etapa-modal-cerrar"
+              aria-label="Cerrar"
+              onClick={() => dialogoRef.current?.close()}
+            >
+              ×
+            </button>
+
+            <div className="etapa-modal-etiqueta">{entidad}</div>
+            <h2 className="etapa-modal-titulo" id="etapa-modal-titulo">
+              {etapaAbierta.nombre}
+            </h2>
+            <div className="etapa-modal-fecha">{etapaAbierta.valor}</div>
+
+            <p className="etapa-modal-texto">{etapaAbierta.texto}</p>
+
+            {etapaAbierta.link && (
+              <a
+                className="etapa-modal-link"
+                href={etapaAbierta.link}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Consultar aquí
+              </a>
+            )}
+          </div>
+        )}
+      </dialog>
     </div>
   );
 }

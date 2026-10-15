@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { NACIONAL, VINO } from "@/lib/constants";
 import { claveIcono } from "@/lib/iconKeys";
 import { calcularIndicadores } from "@/lib/indicadores";
+import { useEscalaPantalla } from "@/lib/useEscalaPantalla";
 import type { FichasEspeciales, FilaDatos } from "@/lib/types";
 import Toolbar from "./Toolbar";
 import FichaEspecial from "./FichaEspecial";
@@ -118,8 +119,16 @@ export default function Dashboard({
     [datosPeriodo, entidadActiva]
   );
 
+  const [shellRef, escala] = useEscalaPantalla<HTMLDivElement>();
+
   return (
-    <div className="app-shell">
+    <div
+      className="app-shell"
+      ref={shellRef}
+      style={
+        escala ? ({ "--escala": escala } as React.CSSProperties) : undefined
+      }
+    >
       <Toolbar
         anios={anios}
         anio={anio}
@@ -160,6 +169,7 @@ export default function Dashboard({
             <AvancesImplementacion
               etapas={indicadores.etapas}
               esNacional={esNacional}
+              entidad={entidadActiva}
               iconos={iconos}
             />
           </div>

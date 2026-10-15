@@ -6,6 +6,7 @@ import { formato } from "@/lib/format";
 import { claveIcono } from "@/lib/iconKeys";
 import { TINTA, VINO } from "@/lib/constants";
 import type { FilaPaa } from "@/lib/types";
+import { useAltoContenedor } from "@/lib/useAltoContenedor";
 
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false });
 
@@ -18,6 +19,12 @@ export default function Profesionalizacion({
   paa: FilaPaa[];
   iconos: Record<string, string>;
 }) {
+  // La gráfica llena el espacio que le deja la tarjeta, cuyo alto
+  // marca la tarjeta de la PDN que comparte fila.
+  const hayPaa = paa.length > 0;
+  const [contenedorRef, alto, escala] =
+    useAltoContenedor<HTMLDivElement>(hayPaa);
+
   const datosOrdenados = [...paa].sort((a, b) => a.personas - b.personas);
 
   const data: Data[] = [
@@ -29,7 +36,7 @@ export default function Profesionalizacion({
       text: datosOrdenados.map((fila) => String(fila.personas)),
       texttemplate: "%{text:,.0f}",
       textposition: "outside",
-      textfont: { size: 9.5, color: TINTA },
+      textfont: { size: 9.5 * escala, color: TINTA },
       cliponaxis: false,
       marker: { color: VINO },
       customdata: datosOrdenados.map((fila) => [fila.institucion_completa]),
@@ -40,14 +47,15 @@ export default function Profesionalizacion({
 
   const layout: Partial<Layout> = {
     autosize: true,
-    margin: { l: 0, r: 46, t: 0, b: 0 },
+    ...(alto ? { height: alto } : {}),
+    margin: { l: 0, r: 46 * escala, t: 0, b: 0 },
     bargap: 0.35,
     xaxis: { visible: false, rangemode: "tozero" },
     yaxis: { showgrid: false, ticksuffix: " " },
     showlegend: false,
     paper_bgcolor: "rgba(0,0,0,0)",
     plot_bgcolor: "rgba(0,0,0,0)",
-    font: { size: 9.5, color: TINTA }
+    font: { size: 9.5 * escala, color: TINTA }
   };
 
   return (
@@ -79,8 +87,8 @@ export default function Profesionalizacion({
         Personas servidoras públicas capacitadas por la PAA
       </div>
 
-      {paa.length > 0 ? (
-        <div className="profesionalizacion-plot-wrapper">
+      {hayPaa ? (
+        <div className="profesionalizacion-plot-wrapper" ref={contenedorRef}>
           <Plot
             data={data}
             layout={layout}

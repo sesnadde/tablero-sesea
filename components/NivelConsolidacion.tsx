@@ -58,26 +58,24 @@ export default function NivelConsolidacion({
         })}
       </div>
 
-      <div className="nivel-detalle">
-        {!hayInformacion ? (
-          <span className="nivel-sin-dato">Sin información</span>
-        ) : esNacional ? (
-          <span className="nivel-sin-dato">
-            Pasa el cursor sobre cada nivel para ver su descripción.
-          </span>
-        ) : nivel === null && !texto ? (
-          <span className="nivel-sin-dato">Sin información</span>
-        ) : (
-          <>
-            {nivel !== null ? (
-              <span className="nivel-insignia">
-                {NIVELES_CONSOLIDACION[nivel].nivel}
-              </span>
-            ) : null}
-            <span className="nivel-texto">{texto}</span>
-          </>
-        )}
-      </div>
+      {/* En la vista nacional los conteos de la escala bastan; el
+          detalle solo se muestra para una entidad o si no hay datos. */}
+      {esNacional && hayInformacion ? null : (
+        <div className="nivel-detalle">
+          {!hayInformacion || (nivel === null && !texto) ? (
+            <span className="nivel-sin-dato">Sin información</span>
+          ) : (
+            <>
+              {nivel !== null ? (
+                <span className="nivel-insignia">
+                  {NIVELES_CONSOLIDACION[nivel].nivel}
+                </span>
+              ) : null}
+              <span className="nivel-texto">{texto}</span>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
