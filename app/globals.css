@@ -1,0 +1,1444 @@
+/* ==================================================
+   IDENTIDAD INSTITUCIONAL
+   ================================================== */
+
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&display=swap");
+
+:root {
+  /* Paleta institucional */
+  --vino: #9b2247;
+  --vino-oscuro: #611232;
+  --oro: #a57f2c;
+  --oro-claro: #e6d194;
+  --gris: #98989a;
+  --tinta: #161a1d;
+
+  /* Gradiente */
+  --gradiente-leyenda: linear-gradient(
+    90deg,
+    #f4eddc 0%,
+    #e6d194 35%,
+    #9b2247 100%
+  );
+
+  /* Dimensiones del dashboard */
+  --alto-grafica: 26vh;
+  --escala: 1;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  font-family: "Noto Sans", "Segoe UI", system-ui, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f2efec;
+  color: var(--tinta);
+}
+
+@media (max-height: 860px) {
+  :root {
+    --alto-grafica: 20vh;
+  }
+
+  .nota-seccion,
+  .pdn-descripcion {
+    display: none;
+  }
+
+  .titulo-seccion {
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+
+  .card {
+    padding: 8px 14px 5px 14px;
+  }
+}
+
+/* Pantallas de poca altura: todo se compacta */
+@media (max-height: 780px) {
+  :root {
+    --alto-grafica: 15vh;
+    --escala: 0.96;
+  }
+
+  .app-shell {
+    padding: 0.35rem 0.9rem 0.2rem 0.9rem;
+  }
+
+  .app-shell {
+    gap: 0.4rem;
+  }
+
+  .toolbar {
+    padding: 5px 18px 0 18px;
+  }
+
+  .card {
+    padding: 7px 12px 6px 12px;
+  }
+
+  .des-tarjeta {
+    min-height: 86px;
+    padding: 6px 6px 6px 8px;
+  }
+
+  .des-icono {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+  }
+
+  .des-titulo {
+    min-height: 28px;
+  }
+
+  .des-valor {
+    font-size: 21px;
+  }
+
+  .avance-circulo {
+    width: 36px;
+    height: 36px;
+  }
+
+  .avances-linea,
+  .avances-progreso {
+    top: 18px;
+  }
+
+  .avance-nombre {
+    min-height: 28px;
+  }
+
+  .pdn-anillo {
+    width: 44px;
+    height: 44px;
+  }
+
+  .pdn-anillo-centro {
+    width: 34px;
+    height: 34px;
+    font-size: 12px;
+  }
+
+  .cons-valor {
+    font-size: 32px;
+  }
+
+  .prof-numero {
+    font-size: 25px;
+  }
+
+  .des-titulo,
+  .avance-nombre {
+    font-size: 9px;
+  }
+
+  .des-resumen {
+    margin-top: 4px;
+    padding-top: 4px;
+  }
+
+  .resumen-mapa {
+    margin-top: 4px;
+    padding-top: 4px;
+  }
+}
+
+/* Pantallas muy bajas: mínima expresión */
+@media (max-height: 690px) {
+  :root {
+    --alto-grafica: 13vh;
+  }
+
+  .des-tarjeta {
+    min-height: 76px;
+  }
+
+  .des-valor {
+    font-size: 18px;
+  }
+
+  .des-titulo,
+  .avance-nombre {
+    font-size: 8.5px;
+  }
+
+  .avance-circulo {
+    width: 30px;
+    height: 30px;
+  }
+
+  .avances-linea,
+  .avances-progreso {
+    top: 15px;
+  }
+
+  .pdn-anillo {
+    width: 38px;
+    height: 38px;
+  }
+
+  .pdn-anillo-centro {
+    width: 29px;
+    height: 29px;
+    font-size: 10px;
+  }
+
+  .cons-valor {
+    font-size: 27px;
+  }
+
+  .prof-numero {
+    font-size: 21px;
+  }
+
+  .resumen-mapa,
+  .cons-fila,
+  .des-meta {
+    font-size: 9.5px;
+  }
+}
+
+@media (max-height: 655px) {
+  :root {
+    --alto-grafica: 11vh;
+    --escala: 0.92;
+  }
+
+  .des-tarjeta {
+    min-height: 68px;
+  }
+
+  .avance-nombre,
+  .des-titulo {
+    min-height: 24px;
+  }
+}
+
+@media (max-height: 600px) {
+  :root {
+    --escala: 0.84;
+  }
+}
+
+@media (max-height: 540px) {
+  :root {
+    --escala: 0.74;
+  }
+}
+
+/* Escalado proporcional de respaldo en ventanas muy bajas.
+   El ancho se compensa para seguir ocupando toda la pantalla. */
+.app-shell {
+  zoom: var(--escala, 1);
+  width: calc(100% / var(--escala, 1));
+}
+
+.app-shell {
+  min-height: 100vh;
+  padding: 0.5rem 1.1rem 0.4rem 1.1rem;
+  max-width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+/* ------------------------------------------
+   BARRA SUPERIOR
+------------------------------------------ */
+
+.toolbar {
+  background: linear-gradient(
+    90deg,
+    var(--vino-oscuro) 0%,
+    var(--vino) 55%
+  );
+  border-radius: 12px;
+  padding: 8px 22px 2px 22px;
+  box-shadow: 0 2px 10px rgba(22, 26, 29, 0.14);
+  display: grid;
+  grid-template-columns: 3.3fr 1fr 1.2fr 1.6fr 0.45fr;
+  align-items: center;
+  column-gap: 14px;
+}
+
+.toolbar-campo {
+  margin-bottom: 4px;
+  display: flex;
+  flex-direction: column;
+}
+
+.toolbar-campo label {
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.toolbar-campo select {
+  background-color: #ffffff;
+  border: none;
+  border-radius: 7px;
+  min-height: 32px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tinta);
+  padding: 4px 8px;
+  font-family: inherit;
+}
+
+.toolbar-descarga {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.download-button {
+  width: 34px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 7px;
+  background-color: #ffffff;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 17px 17px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.download-button:hover {
+  background-color: var(--oro-claro);
+  transform: translateY(-1px);
+}
+
+.download-button:disabled {
+  cursor: progress;
+  opacity: 0.75;
+}
+
+.toolbar-titulo {
+  min-width: 0;
+}
+
+.titulo-barra {
+  color: #ffffff;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.15;
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ------------------------------------------
+   DISTRIBUCION PRINCIPAL
+------------------------------------------ */
+
+.contenido-principal {
+  display: grid;
+  grid-template-columns: 1fr 1.28fr;
+  grid-template-rows: 1fr;
+  gap: 0 1rem;
+  align-items: start;
+  flex: 1;
+  min-height: 0;
+}
+
+.columna {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* La columna del mapa y los avances debe ocupar todo el alto
+   disponible de la página; la columna de designaciones/PDN/
+   profesionalización conserva su alto natural. */
+.contenido-principal > .columna:first-child {
+  align-self: stretch;
+  height: 100%;
+}
+
+.card-mapa {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.card-avances {
+  flex: 0 0 auto;
+}
+
+.fila-pdn-profesionalizacion {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 0.55rem;
+}
+
+/* ------------------------------------------
+   TARJETAS CONTENEDORAS
+------------------------------------------ */
+
+.card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 8px 14px 5px 14px;
+  box-shadow: 0 1px 6px rgba(22, 26, 29, 0.08);
+  min-width: 0;
+}
+
+/* La PDN comparte fila con Profesionalización: al ser celdas de
+   una fila de grid con align-items:stretch (el valor por defecto)
+   ambas quedan de la misma altura automáticamente, sin necesidad de
+   forzar height:100% (eso las recortaba a la altura de la tarjeta
+   más corta y hacía que el texto se saliera de la caja). */
+.card-pdn,
+.card-profesionalizacion {
+  min-height: 300px;
+  box-sizing: border-box;
+}
+
+.titulo-seccion {
+  color: var(--vino);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.titulo-con-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nota-seccion {
+  color: var(--gris);
+  font-size: 10.5px;
+  margin: 1px 0 6px 0;
+}
+
+/* ------------------------------------------
+   BLOQUE DE GRADO DE CONSOLIDACION
+------------------------------------------ */
+
+.cons-encabezado {
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin: 0 0 4px 0;
+}
+
+.cons-entidad {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--tinta);
+  line-height: 1.2;
+}
+
+.cons-valor {
+  font-size: 38px;
+  font-weight: 700;
+  color: var(--vino);
+  line-height: 1;
+}
+
+.cons-valor span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gris);
+}
+
+.cons-componentes {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cons-fila {
+  display: grid;
+  grid-template-columns: 116px 1fr 70px;
+  align-items: center;
+  gap: 8px;
+  font-size: 10.5px;
+  line-height: 1.25;
+  color: var(--tinta);
+}
+
+.cons-pista {
+  background-color: #ece7e9;
+  border-radius: 6px;
+  height: 7px;
+  overflow: hidden;
+}
+
+.cons-relleno {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--oro) 0%, var(--vino) 100%);
+}
+
+.cons-porcentaje {
+  text-align: right;
+  font-weight: 700;
+  color: var(--vino-oscuro);
+  white-space: nowrap;
+}
+
+.cons-porcentaje span {
+  font-weight: 400;
+  color: var(--gris);
+}
+
+.leyenda-mapa {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 0;
+  font-size: 10px;
+  color: var(--gris);
+}
+
+.leyenda-barra {
+  flex: 0 0 165px;
+  height: 8px;
+  border-radius: 5px;
+  background: var(--gradiente-leyenda);
+}
+
+.leyenda-sin-dato {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  background-color: #d9d9d9;
+  margin-right: 4px;
+  vertical-align: -1px;
+}
+
+.resumen-mapa {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 16px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid #ece7e9;
+  font-size: 10.5px;
+  line-height: 1.3;
+  color: var(--tinta);
+}
+
+.resumen-etiqueta {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--gris);
+  margin-bottom: 2px;
+}
+
+.resumen-mapa b {
+  color: var(--vino-oscuro);
+}
+
+/* ------------------------------------------
+   DESIGNACIONES
+------------------------------------------ */
+
+.grid-designaciones {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.des-tarjeta {
+  border-radius: 10px;
+  padding: 8px 8px 8px 10px;
+  background: linear-gradient(180deg, var(--tinte) 0%, #ffffff 78%);
+  border: 1px solid var(--borde);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-height: 112px;
+}
+
+.des-icono {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background-color: var(--color);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.des-titulo {
+  font-size: 9.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--tinta);
+  min-height: 34px;
+}
+
+.des-valor {
+  font-size: 25px;
+  font-weight: 700;
+  color: var(--tinta);
+  line-height: 1;
+}
+
+.des-meta {
+  font-size: 9.5px;
+  color: var(--gris);
+  margin-top: -1px;
+}
+
+.des-resumen {
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px solid #ece7e9;
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  font-size: 10.5px;
+  color: var(--gris);
+}
+
+.des-resumen b {
+  font-size: 15px;
+  color: var(--vino);
+}
+
+/* ------------------------------------------
+   LINEA DE AVANCES
+------------------------------------------ */
+
+.avances-fila {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  position: relative;
+  margin-top: 2px;
+}
+
+.avances-linea {
+  position: absolute;
+  top: 22px;
+  left: 10%;
+  width: 80%;
+  height: 3px;
+  background-color: #e4dfe1;
+  z-index: 1;
+}
+
+.avances-progreso {
+  position: absolute;
+  top: 22px;
+  left: 10%;
+  height: 3px;
+  background-color: var(--vino);
+  z-index: 2;
+}
+
+.avance-etapa {
+  position: relative;
+  z-index: 3;
+  text-align: center;
+  padding: 0 4px;
+}
+
+.avance-circulo {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 5px auto;
+  border-radius: 50%;
+  border: 2.5px solid var(--vino);
+  background-color: #ffffff;
+  color: var(--vino);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avance-etapa.inactiva .avance-circulo {
+  border-color: #d8d3d5;
+  color: #c3bdbf;
+  background-color: #fafafa;
+}
+
+.avance-nombre {
+  font-size: 9.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--tinta);
+  min-height: 34px;
+}
+
+.avance-valor {
+  display: inline-block;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--vino-oscuro);
+  background-color: #f8f1f3;
+  border-radius: 5px;
+  padding: 1px 6px;
+  margin-top: 1px;
+}
+
+.avance-etapa.inactiva .avance-nombre {
+  color: var(--gris);
+}
+
+.avance-etapa.inactiva .avance-valor {
+  color: var(--gris);
+  background-color: #f4f2f3;
+}
+
+.avance-documento {
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 3px;
+}
+
+.avance-link {
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  border: 1px solid var(--vino);
+  color: var(--vino) !important;
+  text-decoration: none !important;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+
+  background: #ffffff;
+
+  transition: background-color 0.15s ease, color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.avance-link:hover {
+  background: var(--vino);
+  color: #ffffff !important;
+  transform: translateY(-1px);
+}
+
+/* Botón de información genérico (ej. metodología del grado de
+   consolidación) */
+
+.avance-info-bloque {
+  min-height: 24px;
+  display: flex;
+  justify-content: center;
+  margin-top: 3px;
+}
+
+.avance-info {
+  position: relative;
+}
+
+.avance-info summary {
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+
+  border: 1px solid var(--gris);
+  color: var(--gris);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+
+  cursor: pointer;
+  list-style: none;
+
+  background: #ffffff;
+}
+
+.avance-info summary::-webkit-details-marker {
+  display: none;
+}
+
+.avance-info summary:hover {
+  border-color: var(--vino);
+  color: var(--vino);
+}
+
+/* Cuadro que se abre */
+
+.avance-info-contenido {
+  position: absolute;
+
+  z-index: 100;
+
+  width: 220px;
+
+  left: 50%;
+  transform: translateX(-50%);
+
+  top: 27px;
+
+  padding: 10px 12px;
+
+  border-radius: 7px;
+
+  background: #ffffff;
+
+  border: 1px solid #e3dddf;
+
+  box-shadow: 0 5px 16px rgba(0, 0, 0, 0.12);
+
+  color: var(--tinta);
+
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.4;
+
+  text-align: left;
+}
+
+/* Botón de información por etapa (Avances de la implementación) */
+
+.avance-info-etapa {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.avance-info-etapa > summary {
+  list-style: none;
+  cursor: pointer;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avance-info-etapa > summary::-webkit-details-marker {
+  display: none;
+}
+
+.avance-info-etapa > summary:hover {
+  background-color: #faf5f7;
+  transform: scale(1.04);
+}
+
+.avance-info-etapa .avance-info-contenido {
+  position: absolute;
+  z-index: 100;
+  width: 220px;
+
+  left: 50%;
+  top: 58px;
+  transform: translateX(-50%);
+
+  padding: 10px 12px;
+
+  background: #ffffff;
+  border: 1px solid #e3dddf;
+  border-radius: 7px;
+
+  box-shadow: 0 5px 16px rgba(0, 0, 0, 0.12);
+
+  color: var(--tinta);
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.4;
+  text-align: left;
+}
+
+/* ------------------------------------------
+   PDN
+------------------------------------------ */
+
+.pdn-contenido {
+  display: grid;
+  grid-template-columns: 1.45fr 1px 0.85fr;
+  align-items: center;
+  gap: 18px;
+
+  min-height: 220px;
+  height: 100%;
+}
+
+.grid-pdn {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, auto);
+  gap: 18px 22px;
+
+  align-content: center;
+  justify-items: center;
+}
+
+.pdn-sistema {
+  text-align: center;
+}
+
+.pdn-anillo {
+  width: 62px;
+  height: 62px;
+  margin: 0 auto 4px auto;
+  border-radius: 50%;
+  background: conic-gradient(var(--vino) calc(var(--pct) * 1%), #ece7e9 0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pdn-anillo-centro {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--vino-oscuro);
+}
+
+.pdn-valor {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--tinta);
+}
+
+.pdn-valor span {
+  font-size: 9.5px;
+  font-weight: 400;
+  color: var(--gris);
+}
+
+.pdn-porcentaje {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--vino);
+}
+
+.pdn-descripcion {
+  font-size: 9.5px;
+  line-height: 1.25;
+  color: var(--gris);
+  margin-top: 5px;
+  padding: 0 4px;
+}
+
+.pdn-separador {
+  width: 1px;
+  height: 190px;
+  background-color: #ece7e9;
+  align-self: center;
+}
+
+.pdn-total {
+  text-align: center;
+  color: var(--vino);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  height: 100%;
+  min-height: 180px;
+}
+
+.pdn-total-titulo {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--tinta);
+  line-height: 1.25;
+  margin: 2px 0 1px 0;
+}
+
+.pdn-total-valor {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--tinta);
+  line-height: 1.1;
+}
+
+.pdn-total-valor span {
+  font-size: 11px;
+  color: var(--gris);
+}
+
+/* ------------------------------------------
+   PROFESIONALIZACION
+------------------------------------------ */
+
+.prof-encabezado {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 2px 0 2px 0;
+}
+
+.prof-icono {
+  flex: 0 0 auto;
+  line-height: 0;
+}
+
+.prof-numero {
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--vino);
+  line-height: 1;
+}
+
+.prof-texto {
+  font-size: 10px;
+  color: var(--tinta);
+  line-height: 1.3;
+}
+
+.prof-separador {
+  width: 100%;
+  height: 1px;
+  background-color: #ece7e9;
+  margin: 8px 0 6px 0;
+}
+
+.prof-subtitulo {
+  color: var(--gris);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.25;
+  margin: 0 0 4px 0;
+}
+
+/* ------------------------------------------
+   NIVEL DE CONSOLIDACION (N0 a N4)
+------------------------------------------ */
+
+.nivel-escala {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+
+/* El fondo mezcla blanco con vino según --intensidad (0 a 1). */
+.nivel-paso {
+  --intensidad: 0;
+  border-radius: 8px;
+  border: 1px solid #ece7e9;
+  background-color: color-mix(
+    in srgb,
+    var(--vino) calc(var(--intensidad) * 100%),
+    #f7f4f5
+  );
+  padding: 6px 4px;
+  text-align: center;
+  cursor: help;
+  color: var(--gris);
+}
+
+.nivel-paso.activo {
+  border-color: var(--vino);
+  color: var(--vino-oscuro);
+}
+
+/* Sobre fondos oscuros el texto va en blanco. */
+.nivel-paso.oscuro {
+  color: #ffffff;
+}
+
+.nivel-clave {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.nivel-rango {
+  font-size: 9.5px;
+  line-height: 1.2;
+}
+
+.nivel-conteo {
+  font-size: 13px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.nivel-conteo span {
+  font-size: 9px;
+  font-weight: 400;
+}
+
+.nivel-detalle {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 7px;
+  padding-top: 6px;
+  border-top: 1px solid #ece7e9;
+  font-size: 10.5px;
+  line-height: 1.35;
+  color: var(--tinta);
+}
+
+.nivel-insignia {
+  flex: 0 0 auto;
+  background-color: var(--vino);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 10.5px;
+  border-radius: 5px;
+  padding: 1px 6px;
+}
+
+.nivel-sin-dato {
+  color: var(--gris);
+}
+
+/* El mapa y la gráfica se ajustan al alto de la ventana. */
+.mapa-plot-wrapper {
+  flex: 1;
+  min-height: 140px;
+}
+
+.profesionalizacion-plot-wrapper {
+  height: var(--alto-grafica);
+  min-height: 0;
+}
+
+.sin-dato {
+  font-size: 12.5px;
+  color: var(--gris);
+  padding: 14px 0;
+}
+
+.aviso-sin-informacion {
+  background-color: #fdf6e9;
+  border-left: 3px solid var(--oro);
+  border-radius: 6px;
+  padding: 5px 10px;
+  margin: 2px 0 6px 0;
+  font-size: 10.5px;
+  line-height: 1.3;
+  color: var(--tinta);
+}
+
+/* Botón de regreso a la vista nacional */
+.btn-volver-nacional {
+  background-color: #ffffff;
+  border: 1px solid var(--vino);
+  color: var(--vino);
+  border-radius: 8px;
+  padding: 2px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.btn-volver-nacional:hover {
+  background-color: var(--vino);
+  color: #ffffff;
+}
+
+/* ==================================================
+   FICHAS INSTITUCIONALES ESPECIALES
+   ================================================== */
+
+.ficha-especial {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 18px 26px 16px 26px;
+
+  height: calc(100vh - 160px);
+  box-sizing: border-box;
+
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+
+  gap: 14px;
+
+  overflow: hidden;
+}
+
+.ficha-encabezado {
+  margin: 0;
+}
+
+.ficha-etiqueta {
+  color: var(--vino);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+
+  margin-bottom: 3px;
+}
+
+.ficha-entidad {
+  color: var(--tinta);
+  font-size: clamp(21px, 1.55vw, 27px);
+  font-weight: 700;
+  line-height: 1.1;
+
+  margin-bottom: 3px;
+}
+
+.ficha-situacion {
+  color: var(--vino-oscuro);
+  font-size: clamp(14px, 1vw, 18px);
+  font-weight: 700;
+
+  margin-bottom: 4px;
+}
+
+.ficha-nota {
+  color: var(--gris);
+  font-size: clamp(9px, 0.7vw, 11px);
+}
+
+.ficha-contenido {
+  display: grid;
+  grid-template-columns: 0.72fr 1.65fr;
+  gap: 30px;
+
+  min-height: 0;
+  align-items: start;
+}
+
+.ficha-columna-situacion,
+.ficha-columna-hechos {
+  min-width: 0;
+}
+
+.ficha-titulo-seccion {
+  color: var(--vino);
+  font-size: clamp(10px, 0.78vw, 12px);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+
+  margin-bottom: 7px;
+}
+
+.ficha-texto {
+  color: var(--tinta);
+  font-size: clamp(13px, 0.5vw, 16px);
+  line-height: 1.38;
+
+  text-align: left;
+}
+
+.ficha-hechos {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.ficha-hecho {
+  display: grid;
+  grid-template-columns: 10px 1fr;
+
+  gap: 4px;
+
+  color: var(--tinta);
+  font-size: clamp(11.5px, 0.8vw, 13.5px);
+  line-height: 1.34;
+}
+
+.ficha-vineta {
+  color: var(--vino);
+  font-weight: 700;
+}
+
+.ficha-linea-bloque {
+  min-height: 0;
+}
+
+.ficha-timeline {
+  display: flex;
+
+  width: 100%;
+
+  padding-top: 5px;
+
+  overflow: visible;
+}
+
+.ficha-evento {
+  position: relative;
+
+  flex: 1;
+  min-width: 0;
+
+  padding: 23px 9px 0 0;
+}
+
+.ficha-evento::before {
+  content: "";
+
+  position: absolute;
+
+  top: 8px;
+  left: 0;
+  right: 0;
+
+  height: 2px;
+
+  background: #e1d4d8;
+}
+
+.ficha-evento-punto {
+  position: absolute;
+
+  top: 2px;
+  left: 0;
+
+  width: 12px;
+  height: 12px;
+
+  border-radius: 50%;
+
+  background: var(--vino);
+
+  border: 3px solid #ffffff;
+
+  box-shadow: 0 0 0 2px var(--vino);
+
+  z-index: 2;
+}
+
+.ficha-evento-fecha {
+  color: var(--vino-oscuro);
+
+  font-size: clamp(9px, 0.65vw, 11px);
+  font-weight: 700;
+
+  margin-bottom: 4px;
+}
+
+.ficha-evento-textos {
+  margin: 0;
+
+  padding-left: 13px;
+
+  color: var(--tinta);
+
+  font-size: clamp(8px, 0.58vw, 10px);
+
+  line-height: 1.25;
+}
+
+.ficha-evento-textos li {
+  margin-bottom: 2px;
+}
+
+/* ==================================================
+   AJUSTE PARA PANTALLAS CON MENOR ALTURA
+   ================================================== */
+
+@media (max-height: 820px) {
+  .ficha-especial {
+    height: calc(100vh - 172px);
+    padding-top: 13px;
+    padding-bottom: 11px;
+
+    gap: 9px;
+  }
+
+  .ficha-contenido {
+    gap: 24px;
+  }
+
+  .ficha-hechos {
+    gap: 4px;
+  }
+
+  .ficha-texto,
+  .ficha-hecho {
+    line-height: 1.25;
+  }
+
+  .ficha-evento {
+    padding-top: 20px;
+  }
+
+  .ficha-evento-textos {
+    line-height: 1.16;
+  }
+}
+
+/* Pantallas todavía más bajas */
+
+@media (max-height: 700px) {
+  .ficha-especial {
+    height: calc(100vh - 160px);
+    gap: 6px;
+  }
+
+  .ficha-entidad {
+    font-size: 19px;
+  }
+
+  .ficha-situacion {
+    font-size: 13px;
+  }
+
+  .ficha-texto,
+  .ficha-hecho {
+    font-size: 9px;
+  }
+
+  .ficha-evento-textos {
+    font-size: 7.5px;
+  }
+}
+
+/* Responsivo: pantallas angostas apilan las columnas */
+@media (max-width: 1000px) {
+  .contenido-principal {
+    grid-template-columns: 1fr;
+  }
+
+  .fila-pdn-profesionalizacion {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbar {
+    grid-template-columns: 1fr;
+    row-gap: 8px;
+    padding-bottom: 10px;
+  }
+}

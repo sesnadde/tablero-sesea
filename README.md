@@ -1,4 +1,4 @@
-# Dashboard Informa Trimestral SESEA #
+# Dashboard Informe Trimestral SESEA #
 
 Dashboard interactivo para la consulta y visualización de indicadores de las Secretarías Estatales Anticorrupción (SEA).
 
@@ -14,44 +14,83 @@ Actualmente el dashboard incluye información sobre:
 - Avances a la implementación de la Política Pública a nivel estatal
 - Profesionalización
 
-La informacion se presenta a nivel nacional y se desagrega a nivel estatal
+La informacion se presenta a nivel nacional y se desagrega a nivel estatal.
+
+También incluye un botón de descarga (ícono de base de datos en la
+barra superior) que entrega un ZIP con los informes del trimestre y
+un CSV con la base de datos completa.
 
 # Insumos utilizados #
 
-- Python
-- Streamlit
-- Pandas
-- Plotly
-- Supabase
+- Next.js (App Router) / React / TypeScript
+- Plotly.js (mapa y gráficas)
+- Supabase (base de datos y storage)
 - Git / GitHub
-- Microsoft Office (Excel) como fuente para la actualización periódica de información.
+- Python (solo para los scripts de carga de datos, ver abajo)
 
 # Estructura del proyecto #
 
-procesar_datos.py (Procesamiento de datos)
-cargar_supabase-py (Despliega y actualiza la base en Supabase)
-app.py (Ejecuta el dashboard)
-requirements.txt
-.gitignore
-assets/ json estatal/nacional
-assets/icons/ iconos institucionales del tablero
+```
+app/                    Páginas y rutas (Next.js App Router)
+  page.tsx                Carga los datos de Supabase y arma el tablero
+  layout.tsx               Metadatos y estilos globales
+  globals.css               Estilos del tablero
+  api/descargar/route.ts     Genera el ZIP de descarga
+components/             Componentes de React del tablero
+lib/                    Lógica compartida (cálculo de indicadores,
+                        cliente de Supabase, iconos, formato, CSV)
+content/                fichasEspeciales.json (situaciones institucionales
+                        especiales, ej. CDMX y Oaxaca)
+public/                 GeoJSON de los estados y los iconos (SVG)
+types/                  Declaraciones de TypeScript para react-plotly.js
 
-# Cómo ejecutar el dashboard #
+procesar_datos.py       Procesa el Excel fuente (script de mantenimiento)
+cargar_supabase.py      Sube el Excel procesado a la tabla dashboard_sesea
+probar_supabase.py      Prueba de conexión de solo lectura a Supabase
+```
+
+Los tres scripts de Python (`procesar_datos.py`, `cargar_supabase.py`,
+`probar_supabase.py`) son herramientas independientes de carga y
+mantenimiento de datos; no forman parte del tablero web.
+
+# Cómo ejecutar el tablero #
 
 1. Instalar dependencias:
 
-   pip install -r requirements.txt
+   ```
+   npm install
+   ```
 
-2. Crear el archivo .env con las credenciales:
+2. Crear el archivo `.env.local` (o `.env`) con las credenciales:
 
+   ```
    SUPABASE_URL=...
    SUPABASE_SECRET_KEY=...
+   ```
 
-3. Ejecutar:
+3. Ejecutar en modo desarrollo:
 
-   python -m streamlit run app.py
+   ```
+   npm run dev
+   ```
 
-El tablero queda disponible en http://localhost:8501
+   El tablero queda disponible en http://localhost:3000
+
+4. Para producción:
+
+   ```
+   npm run build
+   npm run start
+   ```
+
+# Cómo actualizar los datos #
+
+1. Colocar el Excel fuente en `data/BDD_Dashboard.xlsx` (carpeta
+   ignorada por git).
+2. `python procesar_datos.py` para limpiar y preparar la base.
+3. `python cargar_supabase.py` para subir los datos a la tabla
+   `dashboard_sesea` en Supabase (requiere `SUPABASE_URL` y
+   `SUPABASE_SECRET_KEY` en `.env`).
 
 # Diseño #
 
