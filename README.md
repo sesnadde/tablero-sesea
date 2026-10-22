@@ -16,9 +16,18 @@ Actualmente el dashboard incluye información sobre:
 
 La informacion se presenta a nivel nacional y se desagrega a nivel estatal.
 
-También incluye un botón de descarga (ícono de base de datos en la
-barra superior) que entrega un ZIP con los informes del trimestre y
-un CSV con la base de datos completa.
+La barra superior incluye tres botones de descarga independientes:
+
+- Base de datos completa (CSV).
+- Fichas estatales del periodo seleccionado
+  (`informe_sea_{t}t_{aa}_compendiovf.pdf`).
+- Informe del periodo seleccionado
+  (`informe_sea_{t}t_{aa}_hallazgosvf.pdf`).
+
+Los PDF se leen del bucket `Archivos` de Supabase según el año y
+trimestre elegidos. Para publicar un trimestre nuevo basta con subir
+sus dos PDF con esa misma estructura de nombre (por ejemplo
+`informe_sea_3t_26_hallazgosvf.pdf`).
 
 # Insumos utilizados #
 
@@ -35,7 +44,7 @@ app/                    Páginas y rutas (Next.js App Router)
   page.tsx                Carga los datos de Supabase y arma el tablero
   layout.tsx               Metadatos y estilos globales
   globals.css               Estilos del tablero
-  api/descargar/route.ts     Genera el ZIP de descarga
+  api/descargar/route.ts     Entrega el CSV y los enlaces a los PDF
 components/             Componentes de React del tablero
 lib/                    Lógica compartida (cálculo de indicadores,
                         cliente de Supabase, iconos, formato, CSV)

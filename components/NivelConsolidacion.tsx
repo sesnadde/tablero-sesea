@@ -1,6 +1,34 @@
 "use client";
 
-import { NIVELES_CONSOLIDACION } from "@/lib/constants";
+import { ESCALA_MAPA, NIVELES_CONSOLIDACION } from "@/lib/constants";
+
+// Punto de la escala del mapa que representa a cada nivel: 0% para
+// N0 y el centro de su rango para N1 a N4.
+const POSICION_NIVEL = [0, 0.13, 0.38, 0.63, 0.88];
+
+function hexARgb(hex: string): [number, number, number] {
+  const valor = parseInt(hex.slice(1), 16);
+  return [(valor >> 16) & 255, (valor >> 8) & 255, valor & 255];
+}
+
+// Interpola el color de ESCALA_MAPA en t (0 a 1), igual que Plotly.
+function colorEnEscala(t: number): [number, number, number] {
+  for (let i = 1; i < ESCALA_MAPA.length; i++) {
+    const [fin, colorFin] = ESCALA_MAPA[i];
+    if (t <= fin) {
+      const [inicio, colorInicio] = ESCALA_MAPA[i - 1];
+      const f = (t - inicio) / (fin - inicio);
+      const a = hexARgb(colorInicio);
+      const b = hexARgb(colorFin);
+      return [0, 1, 2].map((c) => Math.round(a[c] + (b[c] - a[c]) * f)) as [
+        number,
+        number,
+        number
+      ];
+    }
+  }
+  return hexARgb(ESCALA_MAPA[ESCALA_MAPA.length - 1][1]);
+}
 
 export default function NivelConsolidacion({
   nivel,
@@ -15,8 +43,6 @@ export default function NivelConsolidacion({
   hayInformacion: boolean;
   esNacional: boolean;
 }) {
-  const maximo = Math.max(1, ...distribucion);
-
   return (
     <div className="card card-nivel">
       <div className="titulo-seccion">
@@ -33,18 +59,20 @@ export default function NivelConsolidacion({
           const conteo = distribucion[posicion] ?? 0;
           const activo = esNacional ? conteo > 0 : nivel === posicion;
 
-          // En la vista nacional la intensidad del fondo crece con
-          // el número de entidades en el nivel.
-          const intensidad = esNacional ? conteo / maximo : activo ? 1 : 0;
+          // Cada nivel lleva el color del mapa para su rango; los
+          // niveles sin entidades (o que no son el de la entidad) se
+          // atenúan, como el resto de estados en el mapa.
+          const [r, g, b] = colorEnEscala(POSICION_NIVEL[posicion]);
+          const oscuro = 0.299 * r + 0.587 * g + 0.114 * b < 150;
 
           return (
             <div
               key={item.nivel}
               className={`nivel-paso${activo ? " activo" : ""}${
-                intensidad >= 0.55 ? " oscuro" : ""
+                oscuro ? " oscuro" : ""
               }`}
               title={`${item.nivel} (${item.rango}): ${item.descripcion}`}
-              style={{ "--intensidad": intensidad.toFixed(2) } as React.CSSProperties}
+              style={{ backgroundColor: `rgb(${r}, ${g}, ${b})` }}
             >
               <div className="nivel-clave">{item.nivel}</div>
               <div className="nivel-rango">{item.rango}</div>

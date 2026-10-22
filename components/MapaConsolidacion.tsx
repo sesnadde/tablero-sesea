@@ -177,20 +177,6 @@ export default function MapaConsolidacion({
     [layout, altoMapa]
   );
 
-  const ranking = useMemo(
-    () =>
-      [...datosPeriodo]
-        .filter((fila) => fila.tiene_informacion === 1)
-        .sort((a, b) => (b.grado_cons_total ?? 0) - (a.grado_cons_total ?? 0)),
-    [datosPeriodo]
-  );
-
-  const promedioNacional =
-    ranking.length > 0
-      ? ranking.reduce((a, b) => a + (b.grado_cons_total ?? 0), 0) /
-        ranking.length
-      : null;
-
   function manejarClic(evento: Readonly<PlotMouseEvent>) {
     const punto = evento.points?.[0] as { location?: string } | undefined;
     if (!punto?.location) return;
@@ -262,9 +248,16 @@ export default function MapaConsolidacion({
               >
                 <div>{componente.nombre}</div>
                 <div className="cons-pista">
+                  {/* El degradado abarca toda la pista (igual que la
+                      leyenda del mapa), así el color final del relleno
+                      corresponde al porcentaje alcanzado. */}
                   <span
                     className="cons-relleno"
-                    style={{ width: `${ancho.toFixed(1)}%` }}
+                    style={{
+                      width: `${ancho.toFixed(1)}%`,
+                      backgroundSize:
+                        ancho > 0 ? `${(10000 / ancho).toFixed(1)}% 100%` : undefined
+                    }}
                   />
                 </div>
                 <div className="cons-porcentaje">
@@ -313,81 +306,6 @@ export default function MapaConsolidacion({
           Sin información
         </span>
       </div>
-
-      {ranking.length > 0 && promedioNacional !== null && (
-        <>
-          {esNacional ? (
-            <div className="resumen-mapa">
-              <div>
-                <span className="resumen-etiqueta">Mayor grado</span>
-                {ranking.slice(0, 3).map((fila, indice) => (
-                  <span key={fila.nom_ent}>
-                    {indice > 0 && " · "}
-                    {fila.nom_ent}{" "}
-                    <b>{(fila.grado_cons_total ?? 0).toFixed(1)}%</b>
-                  </span>
-                ))}
-              </div>
-              <div>
-                <span className="resumen-etiqueta">Menor grado</span>
-                {ranking
-                  .slice(-3)
-                  .reverse()
-                  .map((fila, indice) => (
-                    <span key={fila.nom_ent}>
-                      {indice > 0 && " · "}
-                      {fila.nom_ent}{" "}
-                      <b>{(fila.grado_cons_total ?? 0).toFixed(1)}%</b>
-                    </span>
-                  ))}
-              </div>
-            </div>
-          ) : (
-            (() => {
-              const posicion = ranking.findIndex(
-                (fila) => fila.nom_ent === entidadSeleccionada
-              );
-
-              const tienePosicion = posicion >= 0 && gradoTotal !== null;
-              const diferencia = tienePosicion
-                ? gradoTotal! - promedioNacional
-                : null;
-
-              return (
-                <div className="resumen-mapa">
-                  <div>
-                    <span className="resumen-etiqueta">
-                      Posición nacional
-                    </span>
-                    {tienePosicion ? (
-                      <>
-                        <b>{posicion + 1} de {ranking.length}</b> entidades
-                      </>
-                    ) : (
-                      "Sin información"
-                    )}
-                  </div>
-                  <div>
-                    <span className="resumen-etiqueta">
-                      Respecto del promedio nacional (
-                      {promedioNacional.toFixed(1)}%)
-                    </span>
-                    {diferencia !== null ? (
-                      <b>
-                        {diferencia >= 0 ? "+" : ""}
-                        {diferencia.toFixed(1)}
-                      </b>
-                    ) : (
-                      "Sin información"
-                    )}{" "}
-                    {tienePosicion && "puntos porcentuales"}
-                  </div>
-                </div>
-              );
-            })()
-          )}
-        </>
-      )}
     </div>
   );
 }

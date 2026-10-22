@@ -22,6 +22,8 @@ export function construirMapaIconos(): Record<string, string> {
   combinaciones.add(claveIcono("red", VINO));
   combinaciones.add(claveIcono("finanzas", VINO));
   combinaciones.add(claveIcono("database_down", VINO));
+  combinaciones.add(claveIcono("informe", VINO));
+  combinaciones.add(claveIcono("fichas", VINO));
 
   const mapa: Record<string, string> = {};
 

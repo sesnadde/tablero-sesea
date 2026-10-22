@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import type { Data, Layout } from "plotly.js";
 import { formato } from "@/lib/format";
 import { claveIcono } from "@/lib/iconKeys";
-import { TINTA, VINO } from "@/lib/constants";
+import { ORO_CLARO, TINTA, VINO } from "@/lib/constants";
 import type { FilaPaa } from "@/lib/types";
 import { useAltoContenedor } from "@/lib/useAltoContenedor";
 
@@ -50,12 +50,21 @@ export default function Profesionalizacion({
     ...(alto ? { height: alto } : {}),
     margin: { l: 0, r: 46 * escala, t: 0, b: 0 },
     bargap: 0.35,
-    xaxis: { visible: false, rangemode: "tozero" },
-    yaxis: { showgrid: false, ticksuffix: " " },
+    // Ejes fijos y sin arrastre: la gráfica no admite zoom ni paneo
+    xaxis: { visible: false, rangemode: "tozero", fixedrange: true },
+    yaxis: { showgrid: false, ticksuffix: " ", fixedrange: true },
+    dragmode: false,
     showlegend: false,
     paper_bgcolor: "rgba(0,0,0,0)",
     plot_bgcolor: "rgba(0,0,0,0)",
-    font: { size: 9.5 * escala, color: TINTA }
+    font: { size: 9.5 * escala, color: TINTA },
+    // Fondo dorado claro para que el recuadro contraste con las barras
+    hoverlabel: {
+      bgcolor: ORO_CLARO,
+      // Borde del mismo color que el fondo para que no se note
+      bordercolor: ORO_CLARO,
+      font: { color: TINTA, size: 11 * escala }
+    }
   };
 
   return (
@@ -92,7 +101,12 @@ export default function Profesionalizacion({
           <Plot
             data={data}
             layout={layout}
-            config={{ displayModeBar: false, responsive: true }}
+            config={{
+              displayModeBar: false,
+              responsive: true,
+              scrollZoom: false,
+              doubleClick: false
+            }}
             style={{ width: "100%", height: "100%" }}
             useResizeHandler
           />

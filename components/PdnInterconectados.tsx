@@ -38,7 +38,7 @@ export default function PdnInterconectados({
             return (
               <div
                 className="pdn-sistema"
-                title={sistema.descripcion}
+                title={`${sistema.titulo}. ${sistema.nombre}`}
                 key={sistema.clave}
               >
                 <div

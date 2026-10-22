@@ -1,7 +1,7 @@
 "use client";
 
 import { textoTrimestre } from "@/lib/format";
-import DownloadButton from "./DownloadButton";
+import DownloadButton, { type TipoDescarga } from "./DownloadButton";
 
 export default function Toolbar({
   anios,
@@ -13,7 +13,7 @@ export default function Toolbar({
   entidades,
   entidadActiva,
   onEntidadChange,
-  iconoDescargaUri
+  iconosDescarga
 }: {
   anios: number[];
   anio: number;
@@ -24,8 +24,16 @@ export default function Toolbar({
   entidades: string[];
   entidadActiva: string;
   onEntidadChange: (entidad: string) => void;
-  iconoDescargaUri: string;
+  iconosDescarga: Record<TipoDescarga, string>;
 }) {
+  const periodo = `${textoTrimestre(trimestre).toLowerCase()} de ${anio}`;
+
+  const descargas: Array<[TipoDescarga, string]> = [
+    ["datos", "Descargar la base de datos completa (CSV)"],
+    ["fichas", `Descargar las fichas estatales del ${periodo}`],
+    ["informe", `Descargar el informe del ${periodo}`]
+  ];
+
   return (
     <div className="toolbar">
       <div className="toolbar-titulo">
@@ -83,7 +91,16 @@ export default function Toolbar({
       </div>
 
       <div className="toolbar-descarga">
-        <DownloadButton iconoUri={iconoDescargaUri} />
+        {descargas.map(([tipo, etiqueta]) => (
+          <DownloadButton
+            key={tipo}
+            tipo={tipo}
+            anio={anio}
+            trimestre={trimestre}
+            iconoUri={iconosDescarga[tipo]}
+            etiqueta={etiqueta}
+          />
+        ))}
       </div>
     </div>
   );

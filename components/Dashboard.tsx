@@ -139,7 +139,11 @@ export default function Dashboard({
         entidades={entidades}
         entidadActiva={entidadActiva}
         onEntidadChange={setEntidadActiva}
-        iconoDescargaUri={iconos[claveIcono("database_down", VINO)]}
+        iconosDescarga={{
+          datos: iconos[claveIcono("database_down", VINO)],
+          fichas: iconos[claveIcono("fichas", VINO)],
+          informe: iconos[claveIcono("informe", VINO)]
+        }}
       />
 
       {esFichaEspecial ? (

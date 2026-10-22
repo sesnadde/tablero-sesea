@@ -70,6 +70,9 @@ renombrar_columnas = {
     "PAA_SESNA": "PAA_SESNA",
     "PAA_TDF": "PAA_TDF",
     "PAA_TJA": "PAA_TJA",
+    "PJ": "PJ",
+    "SH": "SH",
+    "TDJ": "TDJ",
 
     "FECHA_APROBACION_PEA": "FECHA_APROBACION_PEA",
     "FECHA_APROBACION_PIPEA": "FECHA_APROBACION_PIPEA",
@@ -120,7 +123,10 @@ columnas_profesionalizacion = [
     "PAA_SESEA",
     "PAA_SESNA",
     "PAA_TDF",
-    "PAA_TJA"                   
+    "PAA_TJA",
+    "PJ",
+    "SH",
+    "TDJ"
 ]
 
 for columna in columnas_profesionalizacion:
@@ -269,7 +275,10 @@ diccionario = pd.DataFrame([
     ["PAA_SESNA", "Personas capacitadas por la Secretaria Ejecutiva del Sistema Nacional Anticorrupción en la Plataforma de Aprendizaje Anticorrupción", "Profesionalización", "integer", "No", "Conteo de personas"],
     ["PAA_TDF", "Personas capacitadas por la Coordinación de Vigilancia en la Plataforma de Aprendizaje Anticorrupción", "Profesionalización", "integer", "No", "Conteo de personas"],
     ["PAA_TJA", "Personas capacitadas por el Tribunal de Justica Administrativa en la Plataforma de Aprendizaje Anticorrupción", "Profesionalización", "integer", "No", "Conteo de personas"],
-    
+    ["PJ", "Personas capacitadas por el Poder Judicial en la Plataforma de Aprendizaje Anticorrupción", "Profesionalización", "integer", "No", "Conteo de personas"],
+    ["SH", "Personas capacitadas por la Secretaría de Hacienda en la Plataforma de Aprendizaje Anticorrupción", "Profesionalización", "integer", "No", "Conteo de personas"],
+    ["TDJ", "Personas capacitadas por el Tribunal de Disciplina Judicial en la Plataforma de Aprendizaje Anticorrupción", "Profesionalización", "integer", "No", "Conteo de personas"],
+
 
     ["FECHA_APROBACION_PEA", "Fecha de aprobacion de la PEA", "Implementacion", "date", "Si", ""],
     ["FECHA_APROBACION_PIPEA", "Fecha de aprobacion del PI-PEA", "Implementacion", "date", "Si", ""],

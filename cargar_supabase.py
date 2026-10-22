@@ -83,7 +83,10 @@ columnas_enteras = [
     "paa_sesea",
     "paa_sesna",
     "paa_tdf",
-    "paa_tja"
+    "paa_tja",
+    "pj",
+    "sh",
+    "tdj"
 
 ]
 

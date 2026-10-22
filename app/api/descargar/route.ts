@@ -1,49 +1,19 @@
-import archiver from "archiver";
-import { PassThrough } from "node:stream";
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { filasACsv } from "@/lib/csv";
-import { ARCHIVOS_DESCARGA, NOMBRE_BUCKET_DESCARGA } from "@/lib/constants";
+import {
+  NOMBRE_BUCKET_DESCARGA,
+  nombreDocumento,
+  type TipoDocumento
+} from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-// Se cachea en memoria de proceso para no volver a descargar los PDF
-// (~20MB) del storage en cada clic, igual que @st.cache_data en la
-// versión de Streamlit. Se invalida al reiniciar el servidor.
-let paqueteCache: Buffer | null = null;
+// Vigencia del enlace firmado a los PDF del storage (segundos)
+const VIGENCIA_ENLACE = 60;
 
-async function prepararPaqueteDescarga(): Promise<Buffer> {
-  if (paqueteCache) return paqueteCache;
-
-  const archivo = archiver("zip", { zlib: { level: 9 } });
-  const flujo = new PassThrough();
-  const partes: Buffer[] = [];
-
-  flujo.on("data", (parte: Buffer) => partes.push(parte));
-
-  const listo = new Promise<Buffer>((resolve, reject) => {
-    flujo.on("end", () => resolve(Buffer.concat(partes)));
-    archivo.on("error", reject);
-  });
-
-  archivo.pipe(flujo);
-
-  for (const nombreArchivo of ARCHIVOS_DESCARGA) {
-    const { data, error } = await supabase.storage
-      .from(NOMBRE_BUCKET_DESCARGA)
-      .download(nombreArchivo);
-
-    if (error || !data) {
-      throw new Error(
-        `No se pudo descargar ${nombreArchivo} del storage: ${error?.message ?? "sin datos"}`
-      );
-    }
-
-    const contenido = Buffer.from(await data.arrayBuffer());
-    archivo.append(contenido, { name: nombreArchivo });
-  }
-
+async function descargarDatos() {
   const { data: filas, error } = await supabase
     .from("dashboard_sesea")
     .select("*");
@@ -52,32 +22,67 @@ async function prepararPaqueteDescarga(): Promise<Buffer> {
     throw new Error(`No se pudo consultar dashboard_sesea: ${error.message}`);
   }
 
-  const csv = filasACsv(filas ?? []);
-  archivo.append(Buffer.from(csv, "utf-8"), { name: "dashboard_sesea.csv" });
-
-  await archivo.finalize();
-
-  const resultado = await listo;
-  paqueteCache = resultado;
-  return resultado;
+  return new NextResponse(filasACsv(filas ?? []), {
+    status: 200,
+    headers: {
+      "Content-Type": "text/csv; charset=utf-8",
+      "Content-Disposition": 'attachment; filename="dashboard_sesea.csv"'
+    }
+  });
 }
 
-export async function GET() {
-  try {
-    const zip = await prepararPaqueteDescarga();
+// Los PDF (~10MB) no pasan por el servidor: se entrega un enlace
+// firmado y el navegador los descarga directo del storage.
+async function enlaceDocumento(
+  tipo: TipoDocumento,
+  anio: number,
+  trimestre: number
+) {
+  const nombre = nombreDocumento(tipo, anio, trimestre);
 
-    return new NextResponse(new Uint8Array(zip), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/zip",
-        "Content-Disposition": 'attachment; filename="informes_sesea.zip"',
-        "Content-Length": String(zip.length)
+  const { data, error } = await supabase.storage
+    .from(NOMBRE_BUCKET_DESCARGA)
+    .createSignedUrl(nombre, VIGENCIA_ENLACE, { download: nombre });
+
+  if (error || !data) {
+    return NextResponse.json(
+      { error: `No hay documento disponible para el periodo (${nombre}).` },
+      { status: 404 }
+    );
+  }
+
+  return NextResponse.json({ url: data.signedUrl });
+}
+
+export async function GET(request: NextRequest) {
+  const parametros = request.nextUrl.searchParams;
+  const tipo = parametros.get("tipo");
+
+  try {
+    if (tipo === "datos") return await descargarDatos();
+
+    if (tipo === "informe" || tipo === "fichas") {
+      const anio = Number(parametros.get("anio"));
+      const trimestre = Number(parametros.get("trimestre"));
+
+      if (!Number.isInteger(anio) || ![1, 2, 3, 4].includes(trimestre)) {
+        return NextResponse.json(
+          { error: "Periodo no válido." },
+          { status: 400 }
+        );
       }
-    });
+
+      return await enlaceDocumento(tipo, anio, trimestre);
+    }
+
+    return NextResponse.json(
+      { error: "Tipo de descarga no válido." },
+      { status: 400 }
+    );
   } catch (error) {
     console.error(error);
     return NextResponse.json(
-      { error: "No se pudo preparar el archivo de descarga." },
+      { error: "No se pudo preparar la descarga." },
       { status: 500 }
     );
   }

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <path fill="currentColor" d="M5 1h8a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-1v-1h1V2H6v2H5z"/>
+  <path fill="currentColor" fill-rule="evenodd" d="M3 4h7a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zM3 5v9h7V5z"/>
+  <rect fill="currentColor" x="4" y="7" width="5" height="1"/>
+  <rect fill="currentColor" x="4" y="9" width="5" height="1"/>
+  <rect fill="currentColor" x="4" y="11" width="3" height="1"/>
+</svg>

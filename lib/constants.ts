@@ -51,28 +51,38 @@ export interface ConfigSistema {
   clave: string;
   titulo: string;
   descripcion: string;
+  // Nombre completo del sistema, se muestra al pasar el cursor
+  nombre: string;
 }
 
 export const SISTEMAS_PDN: ConfigSistema[] = [
   {
     clave: "s1",
     titulo: "S1",
-    descripcion: "Declaraciones patrimoniales y de intereses"
+    descripcion: "Declaraciones patrimoniales y de intereses",
+    nombre:
+      "Sistema de evolución patrimonial, de declaración de intereses y constancia de presentación de declaración fiscal"
   },
   {
     clave: "s2",
     titulo: "S2",
-    descripcion: "Servidores públicos en contrataciones"
+    descripcion: "Servidores públicos en contrataciones",
+    nombre:
+      "Sistema de los servidores públicos que intervengan en procedimientos de contrataciones públicas"
   },
   {
     clave: "s3",
     titulo: "S3",
-    descripcion: "Servidores públicos y particulares sancionados"
+    descripcion: "Servidores públicos y particulares sancionados",
+    nombre:
+      "Sistema nacional de servidores públicos y particulares sancionados"
   },
   {
     clave: "s6",
     titulo: "S6",
-    descripcion: "Información pública de contrataciones"
+    descripcion: "Información pública de contrataciones",
+    nombre:
+      "Sistema de información pública de contrataciones"
   }
 ];
 
@@ -197,7 +207,10 @@ export const ETIQUETAS_PAA: Record<string, [string, string]> = {
   paa_sesna: [
     "SESNA",
     "Secretaría Ejecutiva del Sistema Nacional Anticorrupción"
-  ]
+  ],
+  pj: ["Poder Judicial", "Poder Judicial"],
+  sh: ["Secretaría de Hacienda", "Secretaría de Hacienda"],
+  tdj: ["Disciplina Judicial", "Tribunal de Disciplina Judicial"]
 };
 
 // El GeoJSON nombra "México" al Estado de México
@@ -211,7 +224,20 @@ export const EQUIVALENCIAS_INVERSAS: Record<string, string> = {
 
 export const NOMBRE_BUCKET_DESCARGA = "Archivos";
 
-export const ARCHIVOS_DESCARGA = [
-  "informe_sea_2t_26_compendiovf.pdf",
-  "informe_sea_2t_26_hallazgosvf.pdf"
-];
+export type TipoDocumento = "informe" | "fichas";
+
+// Sufijo de cada documento del trimestre en el storage
+const SUFIJOS_DOCUMENTO: Record<TipoDocumento, string> = {
+  informe: "hallazgosvf",
+  fichas: "compendiovf"
+};
+
+/** Nombre del PDF de un periodo, p. ej. informe_sea_2t_26_hallazgosvf.pdf */
+export function nombreDocumento(
+  tipo: TipoDocumento,
+  anio: number,
+  trimestre: number
+): string {
+  const anioCorto = String(anio).slice(-2);
+  return `informe_sea_${trimestre}t_${anioCorto}_${SUFIJOS_DOCUMENTO[tipo]}.pdf`;
+}

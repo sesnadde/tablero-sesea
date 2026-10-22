@@ -45,6 +45,9 @@ export interface FilaDatos {
   paa_sesna: number | null;
   paa_tdf: number | null;
   paa_tja: number | null;
+  pj: number | null;
+  sh: number | null;
+  tdj: number | null;
   link_pea: string | null;
   link_pipea: string | null;
   link_sise: string | null;
@@ -90,6 +93,7 @@ export interface Sistema {
   clave: string;
   titulo: string;
   descripcion: string;
+  nombre: string;
   entes: number;
   total: number;
   porcentaje: number;

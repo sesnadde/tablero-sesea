@@ -117,11 +117,13 @@ export default function AvancesImplementacion({
         })}
       </div>
 
-      <p className="avances-nota">
-        Nota: Los hitos se presentan según su secuencia de implementación.
-        Cuando las fechas oficiales no siguen un orden cronológico, la
-        visualización prioriza el orden de las etapas.
-      </p>
+      {!esNacional && (
+        <p className="avances-nota">
+          Nota: Los hitos se presentan según su secuencia de implementación.
+          Cuando las fechas oficiales no siguen un orden cronológico, la
+          visualización prioriza el orden de las etapas.
+        </p>
+      )}
 
       <dialog
         ref={dialogoRef}

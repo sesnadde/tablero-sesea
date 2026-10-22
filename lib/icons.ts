@@ -14,7 +14,9 @@ export const ARCHIVOS_ICONOS: Record<string, string> = {
   red: "network_node_100dp_A31746_FILL0_wght400_GRAD0_opsz48.svg",
   finanzas: "finance_100dp_A31746_FILL0_wght400_GRAD0_opsz48.svg",
   link: "link_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg",
-  database_down: "database-down.svg"
+  database_down: "database-down.svg",
+  informe: "informe.svg",
+  fichas: "fichas.svg"
 };
 
 const cache = new Map<string, string>();
