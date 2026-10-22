@@ -39,8 +39,7 @@ body {
 }
 
 @media (max-height: 860px) {
-  .nota-seccion,
-  .pdn-descripcion {
+  .nota-seccion {
     display: none;
   }
 
@@ -994,14 +993,6 @@ body {
   font-size: 10px;
   font-weight: 600;
   color: var(--vino);
-}
-
-.pdn-descripcion {
-  font-size: 9.5px;
-  line-height: 1.25;
-  color: var(--gris);
-  margin-top: 5px;
-  padding: 0 4px;
 }
 
 .pdn-separador {

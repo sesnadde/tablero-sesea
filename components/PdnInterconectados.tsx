@@ -58,9 +58,7 @@ export default function PdnInterconectados({
                 </div>
                 <div className="pdn-porcentaje">
                   {hayInformacion ? formato(sistema.porcentaje, 1, "%") : ""}
-                </div>
-                <div className="pdn-descripcion">{sistema.descripcion}</div>
-              </div>
+                </div>              </div>
             );
           })}
         </div>
