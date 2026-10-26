@@ -120,22 +120,25 @@ export function calcularIndicadores(
 
   // ---------- Designaciones ----------
 
+  // En la vista nacional se incluye a la Ciudad de México aunque no tenga
+  // información para el resto del tablero; solo se excluye Oaxaca.
+  const baseDesignaciones = nacional
+    ? datosPeriodo.filter((fila) => fila.nom_ent !== "Oaxaca")
+    : base;
+
   const designaciones: Designacion[] = DESIGNACIONES.map((config, posicion) => {
     let vigentes: number;
     let total: number;
 
     if (nacional && config.clave === "tit") {
-      const baseTitular = datosPeriodo.filter(
-        (fila) => fila.nom_ent !== "Oaxaca"
-      );
-      vigentes = sumNumeric(baseTitular, "des_vig_tit");
+      vigentes = sumNumeric(baseDesignaciones, "des_vig_tit");
       total = 31;
     } else if (!hayInformacion) {
       vigentes = 0;
       total = 0;
     } else {
-      vigentes = sumNumeric(base, `des_vig_${config.clave}`);
-      const pendientes = sumNumeric(base, `des_pend_${config.clave}`);
+      vigentes = sumNumeric(baseDesignaciones, `des_vig_${config.clave}`);
+      const pendientes = sumNumeric(baseDesignaciones, `des_pend_${config.clave}`);
       total = vigentes + pendientes;
     }
 
